@@ -41,7 +41,6 @@
     ],
     "experiments": {
       "tsconfigPaths": true
-    },
-    "newArchEnabled": true
+    }
   }
 }

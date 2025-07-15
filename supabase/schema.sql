@@ -200,6 +200,22 @@ CREATE TABLE public.measurements (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- 個人目標管理
+CREATE TABLE public.goals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    target_value DECIMAL(10, 2) NOT NULL,
+    current_value DECIMAL(10, 2) DEFAULT 0,
+    unit VARCHAR(50) NOT NULL, -- kg, %, 回, km, etc.
+    target_date DATE,
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'completed', 'paused', 'cancelled')),
+    category VARCHAR(50), -- weight, body_fat, muscle_mass, bench_press, etc.
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- 外部キー制約を追加
 ALTER TABLE public.activity_logs ADD CONSTRAINT fk_activity_logs_company_id 
     FOREIGN KEY (company_id) REFERENCES public.companies(id) ON DELETE CASCADE;
@@ -221,6 +237,7 @@ ALTER TABLE public.user_points ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.point_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.measurements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.goals ENABLE ROW LEVEL SECURITY;
 
 -- Policies
 -- ユーザーは自分のプロファイルを管理できる
@@ -245,6 +262,10 @@ CREATE POLICY "Users can view own point transactions" ON public.point_transactio
 
 -- ユーザーは自分の測定記録を管理できる
 CREATE POLICY "Users can manage own measurements" ON public.measurements
+    FOR ALL USING (auth.uid() = user_id);
+
+-- ユーザーは自分の目標を管理できる
+CREATE POLICY "Users can manage own goals" ON public.goals
     FOR ALL USING (auth.uid() = user_id);
 
 -- 会社ユーザーは自分が所属する会社の情報を参照できる
@@ -354,6 +375,9 @@ CREATE TRIGGER update_user_points_updated_at BEFORE UPDATE ON public.user_points
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_measurements_updated_at BEFORE UPDATE ON public.measurements
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_goals_updated_at BEFORE UPDATE ON public.goals
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Functions

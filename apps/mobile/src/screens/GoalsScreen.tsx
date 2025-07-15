@@ -1,313 +1,338 @@
-import React, { useState, useEffect } from 'react'
-import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, Modal } from 'react-native'
-import { Text, Card, Button, Input } from '@fitness-tracker/ui'
-import { colors, spacing } from '@fitness-tracker/ui'
-import { 
-  getGoals, 
-  createGoal, 
-  updateGoal, 
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  TouchableOpacity,
+  Modal,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Text, Card, Button, Input } from "@fitness-tracker/ui";
+import { colors, spacing } from "@fitness-tracker/ui";
+import {
+  getGoals,
+  createGoal,
+  updateGoal,
   deleteGoal,
-  updateGoalProgress 
-} from '../lib/supabase'
-import type { Goal, CreateGoalInput } from '@fitness-tracker/types'
-import { useAuth } from '../hooks/useAuth'
-import { DrawerLayout } from '../components/DrawerLayout'
+  updateGoalProgress,
+} from "../lib/supabase";
+import type { Goal, CreateGoalInput } from "@fitness-tracker/types";
+import { useAuth } from "../hooks/useAuth";
+import {
+  ScreenWrapper,
+  LoadingScreen,
+  EmptyState,
+  ProgressBar,
+} from "../components/shared";
 
 export const GoalsScreen = () => {
-  const { user } = useAuth()
-  const [goals, setGoals] = useState<Goal[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null)
-  const [showProgressModal, setShowProgressModal] = useState(false)
-  
+  const { user } = useAuth();
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+
   // Create goal form
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [targetValue, setTargetValue] = useState('')
-  const [unit, setUnit] = useState('')
-  const [targetDate, setTargetDate] = useState('')
-  const [creating, setCreating] = useState(false)
-  
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [targetValue, setTargetValue] = useState("");
+  const [unit, setUnit] = useState("");
+  const [targetDate, setTargetDate] = useState("");
+  const [creating, setCreating] = useState(false);
+
   // Progress update
-  const [progressValue, setProgressValue] = useState('')
-  const [updating, setUpdating] = useState(false)
+  const [progressValue, setProgressValue] = useState("");
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
-    loadGoals()
-  }, [])
+    if (user) {
+      loadGoals();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
   const loadGoals = async () => {
-    if (!user) return
-    
-    try {
-      const { data, error } = await getGoals(user.id)
-      if (error) throw error
-      setGoals(data || [])
-    } catch (error) {
-      console.error('Error loading goals:', error)
-      Alert.alert('エラー', '目標の読み込みに失敗しました')
-    } finally {
-      setLoading(false)
+    if (!user) {
+      setLoading(false);
+      return;
     }
-  }
+
+    try {
+      const { data, error } = await getGoals(user.id);
+      if (error) throw error;
+      setGoals(data || []);
+    } catch (error) {
+      Alert.alert("エラー", "目標の読み込みに失敗しました");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCreateGoal = async () => {
     if (!title || !user) {
-      Alert.alert('エラー', 'タイトルを入力してください')
-      return
+      Alert.alert("エラー", "タイトルを入力してください");
+      return;
     }
 
-    setCreating(true)
+    setCreating(true);
     try {
       const goalData: CreateGoalInput = {
         title,
         description: description || undefined,
         target_value: targetValue ? parseFloat(targetValue) : undefined,
         unit: unit || undefined,
-        target_date: targetDate || undefined
-      }
+        target_date: targetDate || undefined,
+      };
 
-      const { error } = await createGoal(user.id, goalData)
-      if (error) throw error
+      const { error } = await createGoal(user.id, goalData);
+      if (error) throw error;
 
-      Alert.alert('成功', '目標を作成しました')
-      setShowCreateModal(false)
-      resetForm()
-      loadGoals()
+      Alert.alert("成功", "目標を作成しました");
+      setShowCreateModal(false);
+      resetForm();
+      loadGoals();
     } catch (error: any) {
-      Alert.alert('エラー', error.message)
+      Alert.alert("エラー", error.message);
     } finally {
-      setCreating(false)
+      setCreating(false);
     }
-  }
+  };
 
   const handleUpdateProgress = async () => {
     if (!selectedGoal || !progressValue) {
-      Alert.alert('エラー', '進捗値を入力してください')
-      return
+      Alert.alert("エラー", "進捗値を入力してください");
+      return;
     }
 
-    setUpdating(true)
+    setUpdating(true);
     try {
-      const newValue = parseFloat(progressValue)
-      const { data, error } = await updateGoalProgress(selectedGoal.id, newValue)
-      if (error) throw error
+      const newValue = parseFloat(progressValue);
+      const { data, error } = await updateGoalProgress(
+        selectedGoal.id,
+        newValue
+      );
+      if (error) throw error;
 
-      if (data && data.status === 'completed') {
-        Alert.alert('おめでとうございます！', '目標を達成しました！🎉')
+      if (data && data.status === "completed") {
+        Alert.alert("おめでとうございます！", "目標を達成しました！🎉");
       } else {
-        Alert.alert('成功', '進捗を更新しました')
+        Alert.alert("成功", "進捗を更新しました");
       }
 
-      setShowProgressModal(false)
-      setSelectedGoal(null)
-      setProgressValue('')
-      loadGoals()
+      setShowProgressModal(false);
+      setSelectedGoal(null);
+      setProgressValue("");
+      loadGoals();
     } catch (error: any) {
-      Alert.alert('エラー', error.message)
+      Alert.alert("エラー", error.message);
     } finally {
-      setUpdating(false)
+      setUpdating(false);
     }
-  }
+  };
 
   const handleDeleteGoal = async (goalId: string) => {
-    Alert.alert(
-      '確認',
-      'この目標を削除してもよろしいですか？',
-      [
-        { text: 'キャンセル', style: 'cancel' },
-        {
-          text: '削除',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const { error } = await deleteGoal(goalId)
-              if (error) throw error
-              loadGoals()
-            } catch (error: any) {
-              Alert.alert('エラー', error.message)
-            }
+    Alert.alert("確認", "この目標を削除してもよろしいですか？", [
+      { text: "キャンセル", style: "cancel" },
+      {
+        text: "削除",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const { error } = await deleteGoal(goalId);
+            if (error) throw error;
+            loadGoals();
+          } catch (error: any) {
+            Alert.alert("エラー", error.message);
           }
-        }
-      ]
-    )
-  }
+        },
+      },
+    ]);
+  };
 
-  const handleStatusChange = async (goalId: string, status: Goal['status']) => {
+  const handleStatusChange = async (goalId: string, status: Goal["status"]) => {
     try {
-      const { error } = await updateGoal(goalId, { status })
-      if (error) throw error
-      loadGoals()
+      const { error } = await updateGoal(goalId, { status });
+      if (error) throw error;
+      loadGoals();
     } catch (error: any) {
-      Alert.alert('エラー', error.message)
+      Alert.alert("エラー", error.message);
     }
-  }
+  };
 
   const resetForm = () => {
-    setTitle('')
-    setDescription('')
-    setTargetValue('')
-    setUnit('')
-    setTargetDate('')
-  }
+    setTitle("");
+    setDescription("");
+    setTargetValue("");
+    setUnit("");
+    setTargetDate("");
+  };
 
-  const getStatusColor = (status: Goal['status']) => {
+  const getStatusColor = (status: Goal["status"]) => {
     switch (status) {
-      case 'active':
-        return colors.success
-      case 'completed':
-        return colors.primary
-      case 'paused':
-        return colors.warning
-      case 'cancelled':
-        return colors.gray[500]
+      case "active":
+        return colors.success;
+      case "completed":
+        return colors.primary;
+      case "paused":
+        return colors.warning;
+      case "cancelled":
+        return colors.gray[500];
     }
-  }
+  };
 
-  const getStatusText = (status: Goal['status']) => {
+  const getStatusText = (status: Goal["status"]) => {
     switch (status) {
-      case 'active':
-        return 'アクティブ'
-      case 'completed':
-        return '完了'
-      case 'paused':
-        return '一時停止'
-      case 'cancelled':
-        return 'キャンセル'
+      case "active":
+        return "アクティブ";
+      case "completed":
+        return "完了";
+      case "paused":
+        return "一時停止";
+      case "cancelled":
+        return "キャンセル";
     }
-  }
+  };
 
   if (loading) {
-    return (
-      <DrawerLayout title="目標">
-        <View style={styles.loadingContainer}>
-          <Text variant="body">読み込み中...</Text>
-        </View>
-      </DrawerLayout>
-    )
+    return <LoadingScreen message="目標を読み込み中..." />;
   }
 
   return (
-    <DrawerLayout title="目標">
-      <ScrollView showsVerticalScrollIndicator={false} style={{ padding: spacing.lg }}>
-        <View style={styles.header}>
-          <Button
-            title="新しい目標を作成"
-            onPress={() => setShowCreateModal(true)}
-            style={styles.createButton}
-          />
-        </View>
+    <ScreenWrapper scrollable>
+      <View style={styles.header}>
+        <Button
+          title="新しい目標を作成"
+          onPress={() => setShowCreateModal(true)}
+          style={styles.createButton}
+        />
+      </View>
 
-        {goals.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <Text variant="body" color="gray" style={styles.emptyText}>
-              まだ目標がありません。{'\n'}最初の目標を設定しましょう！
-            </Text>
-          </Card>
-        ) : (
-          goals.map((goal) => (
-            <Card key={goal.id} style={styles.goalCard}>
-              <View style={styles.goalHeader}>
-                <View style={styles.goalTitleContainer}>
-                  <Text variant="heading3" weight="semibold">{goal.title}</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(goal.status) }]}>
-                    <Text style={styles.statusText}>{getStatusText(goal.status)}</Text>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  onPress={() => handleDeleteGoal(goal.id)}
-                  style={styles.deleteButton}
+      {goals.length === 0 ? (
+        <EmptyState
+          icon="target"
+          title="目標がありません"
+          description="最初の目標を設定しましょう！"
+          actionText="目標を作成"
+          onAction={() => setShowCreateModal(true)}
+        />
+      ) : (
+        goals.map((goal) => (
+          <Card key={goal.id} style={styles.goalCard}>
+            <View style={styles.goalHeader}>
+              <View style={styles.goalTitleContainer}>
+                <Text variant="heading3" weight="semibold">
+                  {goal.title}
+                </Text>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    { backgroundColor: getStatusColor(goal.status) },
+                  ]}
                 >
-                  <Text style={styles.deleteButtonText}>削除</Text>
-                </TouchableOpacity>
-              </View>
-
-              {goal.description && (
-                <Text variant="body" color="gray" style={styles.description}>
-                  {goal.description}
-                </Text>
-              )}
-
-              {goal.target_value && (
-                <View style={styles.progressContainer}>
-                  <View style={styles.progressInfo}>
-                    <Text variant="body" weight="semibold">
-                      {goal.current_value} / {goal.target_value} {goal.unit}
-                    </Text>
-                    <Text variant="caption" color="gray">
-                      {Math.round((goal.current_value / goal.target_value) * 100)}% 完了
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.progressBar}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        {
-                          width: `${Math.min((goal.current_value / goal.target_value) * 100, 100)}%`,
-                          backgroundColor: getStatusColor(goal.status)
-                        }
-                      ]}
-                    />
-                  </View>
+                  <Text style={styles.statusText}>
+                    {getStatusText(goal.status)}
+                  </Text>
                 </View>
-              )}
-
-              {goal.target_date && (
-                <Text variant="caption" color="gray" style={styles.targetDate}>
-                  目標日: {new Date(goal.target_date).toLocaleDateString('ja-JP')}
-                </Text>
-              )}
-
-              <View style={styles.goalActions}>
-                {goal.status === 'active' && goal.target_value && (
-                  <Button
-                    title="進捗を更新"
-                    onPress={() => {
-                      setSelectedGoal(goal)
-                      setProgressValue(goal.current_value.toString())
-                      setShowProgressModal(true)
-                    }}
-                    variant="secondary"
-                    size="small"
-                    style={styles.actionButton}
-                  />
-                )}
-                
-                {goal.status === 'active' && (
-                  <Button
-                    title="一時停止"
-                    onPress={() => handleStatusChange(goal.id, 'paused')}
-                    variant="secondary"
-                    size="small"
-                    style={styles.actionButton}
-                  />
-                )}
-                
-                {goal.status === 'paused' && (
-                  <Button
-                    title="再開"
-                    onPress={() => handleStatusChange(goal.id, 'active')}
-                    variant="secondary"
-                    size="small"
-                    style={styles.actionButton}
-                  />
-                )}
-                
-                {(goal.status === 'active' || goal.status === 'paused') && (
-                  <Button
-                    title="完了"
-                    onPress={() => handleStatusChange(goal.id, 'completed')}
-                    size="small"
-                    style={styles.actionButton}
-                  />
-                )}
               </View>
-            </Card>
-          ))
-        )}
-      </ScrollView>
+              <TouchableOpacity
+                onPress={() => handleDeleteGoal(goal.id)}
+                style={styles.deleteButton}
+              >
+                <Text style={styles.deleteButtonText}>削除</Text>
+              </TouchableOpacity>
+            </View>
+
+            {goal.description && (
+              <Text variant="body" color="gray" style={styles.description}>
+                {goal.description}
+              </Text>
+            )}
+
+            {goal.target_value && (
+              <View style={styles.progressContainer}>
+                <View style={styles.progressInfo}>
+                  <Text variant="body" weight="semibold">
+                    {goal.current_value} / {goal.target_value} {goal.unit}
+                  </Text>
+                  <Text variant="caption" color="gray">
+                    {Math.round((goal.current_value / goal.target_value) * 100)}
+                    % 完了
+                  </Text>
+                </View>
+
+                <View style={styles.progressBar}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      {
+                        width: `${Math.min(
+                          (goal.current_value / goal.target_value) * 100,
+                          100
+                        )}%`,
+                        backgroundColor: getStatusColor(goal.status),
+                      },
+                    ]}
+                  />
+                </View>
+              </View>
+            )}
+
+            {goal.target_date && (
+              <Text variant="caption" color="gray" style={styles.targetDate}>
+                目標日: {new Date(goal.target_date).toLocaleDateString("ja-JP")}
+              </Text>
+            )}
+
+            <View style={styles.goalActions}>
+              {goal.status === "active" && goal.target_value && (
+                <Button
+                  title="進捗を更新"
+                  onPress={() => {
+                    setSelectedGoal(goal);
+                    setProgressValue(goal.current_value.toString());
+                    setShowProgressModal(true);
+                  }}
+                  variant="secondary"
+                  size="small"
+                  style={styles.actionButton}
+                />
+              )}
+
+              {goal.status === "active" && (
+                <Button
+                  title="一時停止"
+                  onPress={() => handleStatusChange(goal.id, "paused")}
+                  variant="secondary"
+                  size="small"
+                  style={styles.actionButton}
+                />
+              )}
+
+              {goal.status === "paused" && (
+                <Button
+                  title="再開"
+                  onPress={() => handleStatusChange(goal.id, "active")}
+                  variant="secondary"
+                  size="small"
+                  style={styles.actionButton}
+                />
+              )}
+
+              {(goal.status === "active" || goal.status === "paused") && (
+                <Button
+                  title="完了"
+                  onPress={() => handleStatusChange(goal.id, "completed")}
+                  size="small"
+                  style={styles.actionButton}
+                />
+              )}
+            </View>
+          </Card>
+        ))
+      )}
 
       {/* Create Goal Modal */}
       <Modal
@@ -317,11 +342,13 @@ export const GoalsScreen = () => {
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text variant="heading2" weight="semibold">新しい目標</Text>
+            <Text variant="heading2" weight="semibold">
+              新しい目標
+            </Text>
             <TouchableOpacity
               onPress={() => {
-                setShowCreateModal(false)
-                resetForm()
+                setShowCreateModal(false);
+                resetForm();
               }}
               style={styles.closeButton}
             >
@@ -329,7 +356,10 @@ export const GoalsScreen = () => {
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.modalContent}>
+          <ScrollView 
+            style={styles.modalContent}
+            keyboardShouldPersistTaps="handled"
+          >
             <Input
               label="目標タイトル *"
               value={title}
@@ -390,12 +420,14 @@ export const GoalsScreen = () => {
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text variant="heading2" weight="semibold">進捗を更新</Text>
+            <Text variant="heading2" weight="semibold">
+              進捗を更新
+            </Text>
             <TouchableOpacity
               onPress={() => {
-                setShowProgressModal(false)
-                setSelectedGoal(null)
-                setProgressValue('')
+                setShowProgressModal(false);
+                setSelectedGoal(null);
+                setProgressValue("");
               }}
               style={styles.closeButton}
             >
@@ -406,12 +438,21 @@ export const GoalsScreen = () => {
           <View style={styles.modalContent}>
             {selectedGoal && (
               <>
-                <Text variant="heading3" weight="semibold" style={styles.modalGoalTitle}>
+                <Text
+                  variant="heading3"
+                  weight="semibold"
+                  style={styles.modalGoalTitle}
+                >
                   {selectedGoal.title}
                 </Text>
-                
-                <Text variant="body" color="gray" style={styles.currentProgress}>
-                  現在の進捗: {selectedGoal.current_value} / {selectedGoal.target_value} {selectedGoal.unit}
+
+                <Text
+                  variant="body"
+                  color="gray"
+                  style={styles.currentProgress}
+                >
+                  現在の進捗: {selectedGoal.current_value} /{" "}
+                  {selectedGoal.target_value} {selectedGoal.unit}
                 </Text>
 
                 <Input
@@ -433,36 +474,24 @@ export const GoalsScreen = () => {
           </View>
         </SafeAreaView>
       </Modal>
-    </DrawerLayout>
-  )
-}
+    </ScreenWrapper>
+  );
+};
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   header: {
     marginBottom: spacing.lg,
   },
   createButton: {
     marginBottom: spacing.md,
   },
-  emptyCard: {
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-  },
-  emptyText: {
-    textAlign: 'center',
-  },
   goalCard: {
     marginBottom: spacing.md,
   },
   goalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: spacing.sm,
   },
   goalTitleContainer: {
@@ -474,12 +503,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: 12,
     marginTop: spacing.xs,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   statusText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   deleteButton: {
     backgroundColor: colors.error,
@@ -488,37 +517,18 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   deleteButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 12,
   },
   description: {
     marginBottom: spacing.md,
   },
-  progressContainer: {
-    marginBottom: spacing.md,
-  },
-  progressInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: colors.gray[200],
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
   targetDate: {
     marginBottom: spacing.md,
   },
   goalActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
   },
   actionButton: {
@@ -530,9 +540,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gray[100],
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.gray[300],
@@ -545,13 +555,13 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     color: colors.gray[700],
-    fontWeight: '500',
+    fontWeight: "500",
   },
   modalContent: {
     padding: spacing.lg,
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.md,
   },
   halfInput: {
@@ -569,4 +579,4 @@ const styles = StyleSheet.create({
   updateButton: {
     marginTop: spacing.lg,
   },
-})
+});

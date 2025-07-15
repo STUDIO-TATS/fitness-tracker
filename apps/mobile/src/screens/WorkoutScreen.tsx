@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, Modal, FlatList } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { Text, Card, Button, Input } from '@fitness-tracker/ui'
 import { colors, spacing } from '@fitness-tracker/ui'
 import { 
@@ -7,12 +8,11 @@ import {
   addExerciseToWorkout, 
   addSet, 
   getExercises,
-  searchExercises,
-  getCurrentUser 
+  searchExercises 
 } from '../lib/supabase'
 import type { Exercise, CreateSetInput } from '@fitness-tracker/types'
 import { useAuth } from '../hooks/useAuth'
-import { DrawerLayout } from '../components/DrawerLayout'
+import { ScreenWrapper, EmptyState } from '../components/shared'
 
 interface WorkoutExerciseData {
   exercise: Exercise
@@ -161,118 +161,118 @@ export const WorkoutScreen = () => {
   )
 
   return (
-    <DrawerLayout title="ワークアウト">
-      <ScrollView showsVerticalScrollIndicator={false} style={{ padding: spacing.lg }}>
-        <Input
-          label="ワークアウト名"
-          value={workoutName}
-          onChangeText={setWorkoutName}
-          placeholder="例：胸の日"
+    <ScreenWrapper scrollable>
+      <Input
+        label="ワークアウト名"
+        value={workoutName}
+        onChangeText={setWorkoutName}
+        placeholder="例：胸の日"
+      />
+
+      <Input
+        label="日付"
+        value={workoutDate}
+        onChangeText={setWorkoutDate}
+        placeholder="YYYY-MM-DD"
+      />
+
+      <Input
+        label="メモ（任意）"
+        value={workoutNotes}
+        onChangeText={setWorkoutNotes}
+        placeholder="今日のワークアウトについて..."
+        multiline
+        numberOfLines={3}
+      />
+
+      <Card style={styles.addExerciseCard}>
+        <Button
+          title="エクササイズを追加"
+          onPress={() => setShowExerciseModal(true)}
+          variant="secondary"
         />
+      </Card>
 
-        <Input
-          label="日付"
-          value={workoutDate}
-          onChangeText={setWorkoutDate}
-          placeholder="YYYY-MM-DD"
+      {exercises.length === 0 ? (
+        <EmptyState
+          icon="dumbbell"
+          title="エクササイズがありません"
+          description="エクササイズを追加してワークアウトを開始しましょう"
+          actionText="エクササイズを追加"
+          onAction={() => setShowExerciseModal(true)}
         />
-
-        <Input
-          label="メモ（任意）"
-          value={workoutNotes}
-          onChangeText={setWorkoutNotes}
-          placeholder="今日のワークアウトについて..."
-          multiline
-          numberOfLines={3}
-        />
-
-        <Card style={styles.addExerciseCard}>
-          <Button
-            title="エクササイズを追加"
-            onPress={() => setShowExerciseModal(true)}
-            variant="secondary"
-          />
-        </Card>
-
-        {exercises.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <Text variant="body" color="gray" style={styles.emptyText}>
-              エクササイズを追加してワークアウトを開始しましょう
-            </Text>
-          </Card>
-        ) : (
-          exercises.map((item, exerciseIndex) => (
-            <Card key={exerciseIndex} style={styles.exerciseCard}>
-              <View style={styles.exerciseHeader}>
-                <View style={styles.exerciseInfo}>
-                  <Text variant="heading3" weight="semibold">{item.exercise.name}</Text>
-                  <Text variant="caption" color="gray">{item.exercise.muscle_group}</Text>
-                </View>
-                <TouchableOpacity
-                  onPress={() => removeExercise(exerciseIndex)}
-                  style={styles.removeButton}
-                >
-                  <Text style={styles.removeButtonText}>削除</Text>
-                </TouchableOpacity>
+      ) : (
+        exercises.map((item, exerciseIndex) => (
+          <Card key={exerciseIndex} style={styles.exerciseCard}>
+            <View style={styles.exerciseHeader}>
+              <View style={styles.exerciseInfo}>
+                <Text variant="heading3" weight="semibold">{item.exercise.name}</Text>
+                <Text variant="caption" color="gray">{item.exercise.muscle_group}</Text>
               </View>
+              <TouchableOpacity
+                onPress={() => removeExercise(exerciseIndex)}
+                style={styles.removeButton}
+              >
+                <Text style={styles.removeButtonText}>削除</Text>
+              </TouchableOpacity>
+            </View>
 
-              {item.sets.map((set, setIndex) => (
-                <View key={setIndex} style={styles.setRow}>
-                  <Text style={styles.setNumber}>セット {set.set_number}</Text>
-                  
-                  <View style={styles.setInputContainer}>
-                    <Input
-                      placeholder="回数"
-                      value={set.reps?.toString() || ''}
-                      onChangeText={(value) => updateSet(exerciseIndex, setIndex, 'reps', parseInt(value) || 0)}
-                      keyboardType="numeric"
-                      style={styles.setInput}
-                    />
-                    <Text style={styles.unitText}>reps</Text>
-                  </View>
-                  
-                  <View style={styles.setInputContainer}>
-                    <Input
-                      placeholder="重量"
-                      value={set.weight?.toString() || ''}
-                      onChangeText={(value) => updateSet(exerciseIndex, setIndex, 'weight', parseFloat(value) || 0)}
-                      keyboardType="numeric"
-                      style={styles.setInput}
-                    />
-                    <Text style={styles.unitText}>kg</Text>
-                  </View>
-                  
-                  {item.sets.length > 1 && (
-                    <TouchableOpacity
-                      onPress={() => removeSet(exerciseIndex, setIndex)}
-                      style={styles.removeSetButton}
-                    >
-                      <Text style={styles.removeSetText}>×</Text>
-                    </TouchableOpacity>
-                  )}
+            {item.sets.map((set, setIndex) => (
+              <View key={setIndex} style={styles.setRow}>
+                <Text style={styles.setNumber}>セット {set.set_number}</Text>
+                
+                <View style={styles.setInputContainer}>
+                  <Input
+                    placeholder="回数"
+                    value={set.reps?.toString() || ''}
+                    onChangeText={(value) => updateSet(exerciseIndex, setIndex, 'reps', parseInt(value) || 0)}
+                    keyboardType="numeric"
+                    style={styles.setInput}
+                  />
+                  <Text style={styles.unitText}>reps</Text>
                 </View>
-              ))}
+                
+                <View style={styles.setInputContainer}>
+                  <Input
+                    placeholder="重量"
+                    value={set.weight?.toString() || ''}
+                    onChangeText={(value) => updateSet(exerciseIndex, setIndex, 'weight', parseFloat(value) || 0)}
+                    keyboardType="numeric"
+                    style={styles.setInput}
+                  />
+                  <Text style={styles.unitText}>kg</Text>
+                </View>
+                
+                {item.sets.length > 1 && (
+                  <TouchableOpacity
+                    onPress={() => removeSet(exerciseIndex, setIndex)}
+                    style={styles.removeSetButton}
+                  >
+                    <Text style={styles.removeSetText}>×</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
 
-              <Button
-                title="セットを追加"
-                onPress={() => addSetToExercise(exerciseIndex)}
-                variant="secondary"
-                size="small"
-                style={styles.addSetButton}
-              />
-            </Card>
-          ))
-        )}
+            <Button
+              title="セットを追加"
+              onPress={() => addSetToExercise(exerciseIndex)}
+              variant="secondary"
+              size="small"
+              style={styles.addSetButton}
+            />
+          </Card>
+        ))
+      )}
 
-        {exercises.length > 0 && (
-          <Button
-            title="ワークアウトを保存"
-            onPress={saveWorkout}
-            loading={saving}
-            style={styles.saveButton}
-          />
-        )}
-      </ScrollView>
+      {exercises.length > 0 && (
+        <Button
+          title="ワークアウトを保存"
+          onPress={saveWorkout}
+          loading={saving}
+          style={styles.saveButton}
+        />
+      )}
 
       {/* Exercise Selection Modal */}
       <Modal
@@ -306,21 +306,13 @@ export const WorkoutScreen = () => {
           />
         </SafeAreaView>
       </Modal>
-    </DrawerLayout>
+    </ScreenWrapper>
   )
 }
 
 const styles = StyleSheet.create({
   addExerciseCard: {
     marginVertical: spacing.md,
-  },
-  emptyCard: {
-    marginVertical: spacing.md,
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-  },
-  emptyText: {
-    textAlign: 'center',
   },
   exerciseCard: {
     marginBottom: spacing.md,

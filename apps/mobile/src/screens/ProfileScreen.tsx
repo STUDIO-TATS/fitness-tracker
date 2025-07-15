@@ -1,266 +1,266 @@
-import React, { useState, useEffect } from 'react'
-import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native'
-import { Text, Card, Button, Input } from '@fitness-tracker/ui'
-import { colors, spacing } from '@fitness-tracker/ui'
-import { 
-  signOut, 
-  getProfile, 
-  updateProfile,
-  getCurrentUser
-} from '../lib/supabase'
-import type { User, Profile } from '@fitness-tracker/types'
-import { useAuth } from '../hooks/useAuth'
-import { DrawerLayout } from '../components/DrawerLayout'
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  TouchableOpacity,
+} from "react-native";
+import { Text, Card, Button, Input } from "@fitness-tracker/ui";
+import { colors, spacing } from "@fitness-tracker/ui";
+import { signOut, getProfile, updateProfile } from "../lib/supabase";
+import type { User, Profile } from "@fitness-tracker/types";
+import { useAuth } from "../hooks/useAuth";
+import { ScreenWrapper, LoadingScreen } from "../components/shared";
 
 export const ProfileScreen = () => {
-  const { user } = useAuth()
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [editing, setEditing] = useState(false)
-  const [saving, setSaving] = useState(false)
-  
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
   // Form fields
-  const [displayName, setDisplayName] = useState('')
-  const [username, setUsername] = useState('')
+  const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
 
   useEffect(() => {
-    loadProfile()
-  }, [])
+    if (user) {
+      loadProfile();
+    } else {
+      console.log(
+        "❌ [DEBUG] No user in ProfileScreen, setting loading to false"
+      );
+      setLoading(false);
+    }
+  }, [user]);
 
   const loadProfile = async () => {
-    if (!user) return
-    
+    console.log("🔍 [DEBUG] loadProfile started, user:", user?.email);
+    if (!user) {
+      console.log(
+        "❌ [DEBUG] No user in loadProfile, setting loading to false"
+      );
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { data, error } = await getProfile(user.id)
+      const { data, error } = await getProfile(user.id);
       if (error) {
-        console.error('Error loading profile:', error)
+        console.error("❌ [DEBUG] Error loading profile:", error);
       } else if (data) {
-        setProfile(data)
-        setDisplayName(data.display_name || '')
-        setUsername(data.username || '')
+        setProfile(data);
+        setDisplayName(data.display_name || "");
+        setUsername(data.username || "");
       }
     } catch (error) {
-      console.error('Error:', error)
+      console.error("💥 [DEBUG] Error in loadProfile:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSaveProfile = async () => {
-    if (!user) return
+    if (!user) {
+      console.log("❌ [DEBUG] No user in handleSaveProfile");
+      return;
+    }
 
-    setSaving(true)
+    setSaving(true);
     try {
       const updates = {
         display_name: displayName || null,
-        username: username || null
+        username: username || null,
+      };
+
+      console.log("💾 [DEBUG] Updating profile with:", updates);
+      const { data, error } = await updateProfile(user.id, updates);
+      console.log("💾 [DEBUG] Update result:", { data, error });
+
+      if (error) {
+        console.error("❌ [DEBUG] Update profile error:", error);
+        throw error;
       }
 
-      const { data, error } = await updateProfile(user.id, updates)
-      if (error) throw error
-
-      setProfile(data)
-      setEditing(false)
-      Alert.alert('成功', 'プロフィールを更新しました')
+      console.log("✅ [DEBUG] Profile updated successfully:", data);
+      setProfile(data);
+      setEditing(false);
+      Alert.alert("成功", "プロフィールを更新しました");
     } catch (error: any) {
-      Alert.alert('エラー', error.message)
+      console.error("💥 [DEBUG] Error in handleSaveProfile:", error);
+      Alert.alert(
+        "エラー",
+        error.message || "プロフィールの更新に失敗しました"
+      );
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
-
-  const handleSignOut = async () => {
-    Alert.alert(
-      'ログアウト',
-      'ログアウトしてもよろしいですか？',
-      [
-        { text: 'キャンセル', style: 'cancel' },
-        {
-          text: 'ログアウト',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await signOut()
-            } catch (error: any) {
-              Alert.alert('エラー', error.message)
-            }
-          }
-        }
-      ]
-    )
-  }
+  };
 
   if (loading) {
-    return (
-      <DrawerLayout title="プロフィール">
-        <View style={styles.loadingContainer}>
-          <Text variant="body">読み込み中...</Text>
-        </View>
-      </DrawerLayout>
-    )
+    return <LoadingScreen message="プロフィールを読み込み中..." />;
   }
 
   return (
-    <DrawerLayout title="プロフィール">
-      <ScrollView showsVerticalScrollIndicator={false} style={{ padding: spacing.lg }}>
-        <Card style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {(profile?.display_name || user?.email || 'U').charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            </View>
-            
-            <View style={styles.profileInfo}>
-              <Text variant="heading2" weight="semibold">
-                {profile?.display_name || 'ユーザー'}
+    <ScreenWrapper scrollable>
+      <Card style={styles.profileCard}>
+        <View style={styles.profileHeader}>
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {(profile?.display_name || user?.email || "U")
+                  .charAt(0)
+                  .toUpperCase()}
               </Text>
-              <Text variant="body" color="gray">
-                {user?.email}
+            </View>
+          </View>
+
+          <View style={styles.profileInfo}>
+            <Text variant="heading2" weight="semibold">
+              {profile?.display_name || "ユーザー"}
+            </Text>
+            <Text variant="body" color="gray">
+              {user?.email}
+            </Text>
+            {profile?.username && (
+              <Text variant="caption" color="gray">
+                @{profile.username}
               </Text>
-              {profile?.username && (
-                <Text variant="caption" color="gray">
-                  @{profile.username}
-                </Text>
-              )}
-            </View>
+            )}
           </View>
+        </View>
 
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => setEditing(!editing)}
-          >
-            <Text style={styles.editButtonText}>
-              {editing ? 'キャンセル' : '編集'}
-            </Text>
-          </TouchableOpacity>
-        </Card>
-
-        {editing && (
-          <Card style={styles.editCard}>
-            <Text variant="heading3" weight="semibold" style={styles.editTitle}>
-              プロフィール編集
-            </Text>
-
-            <Input
-              label="表示名"
-              value={displayName}
-              onChangeText={setDisplayName}
-              placeholder="表示名を入力"
-            />
-
-            <Input
-              label="ユーザー名"
-              value={username}
-              onChangeText={setUsername}
-              placeholder="ユーザー名を入力"
-              autoCapitalize="none"
-            />
-
-            <View style={styles.editActions}>
-              <Button
-                title="キャンセル"
-                onPress={() => {
-                  setEditing(false)
-                  setDisplayName(profile?.display_name || '')
-                  setUsername(profile?.username || '')
-                }}
-                variant="secondary"
-                style={styles.actionButton}
-              />
-              <Button
-                title="保存"
-                onPress={handleSaveProfile}
-                loading={saving}
-                style={styles.actionButton}
-              />
-            </View>
-          </Card>
-        )}
-
-        <Card style={styles.statsCard}>
-          <Text variant="heading3" weight="semibold" style={styles.statsTitle}>
-            アカウント情報
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => setEditing(!editing)}
+        >
+          <Text style={styles.editButtonText}>
+            {editing ? "キャンセル" : "編集"}
           </Text>
-          
-          <View style={styles.statRow}>
-            <Text variant="body" color="gray">登録日</Text>
-            <Text variant="body">
-              {user?.created_at 
-                ? new Date(user.created_at).toLocaleDateString('ja-JP')
-                : '不明'
-              }
-            </Text>
-          </View>
-          
-          <View style={styles.statRow}>
-            <Text variant="body" color="gray">プロフィール更新日</Text>
-            <Text variant="body">
-              {profile?.updated_at 
-                ? new Date(profile.updated_at).toLocaleDateString('ja-JP')
-                : '未更新'
-              }
-            </Text>
-          </View>
-        </Card>
+        </TouchableOpacity>
+      </Card>
 
-        <Card style={styles.settingsCard}>
-          <Text variant="heading3" weight="semibold" style={styles.settingsTitle}>
-            設定
+      {editing && (
+        <Card style={styles.editCard}>
+          <Text variant="heading3" weight="semibold" style={styles.editTitle}>
+            プロフィール編集
           </Text>
-          
-          <TouchableOpacity style={styles.settingItem}>
-            <Text variant="body">🔔 通知設定</Text>
-            <Text variant="body" color="gray">></Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.settingItem}>
-            <Text variant="body">📊 データのエクスポート</Text>
-            <Text variant="body" color="gray">></Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.settingItem}>
-            <Text variant="body">🔒 プライバシーポリシー</Text>
-            <Text variant="body" color="gray">></Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.settingItem}>
-            <Text variant="body">📝 利用規約</Text>
-            <Text variant="body" color="gray">></Text>
-          </TouchableOpacity>
+
+          <Input
+            label="表示名"
+            value={displayName}
+            onChangeText={setDisplayName}
+            placeholder="表示名を入力"
+          />
+
+          <Input
+            label="ユーザー名"
+            value={username}
+            onChangeText={setUsername}
+            placeholder="ユーザー名を入力"
+            autoCapitalize="none"
+          />
+
+          <View style={styles.editActions}>
+            <Button
+              title="キャンセル"
+              onPress={() => {
+                setEditing(false);
+                setDisplayName(profile?.display_name || "");
+                setUsername(profile?.username || "");
+              }}
+              variant="secondary"
+              style={styles.actionButton}
+            />
+            <Button
+              title="保存"
+              onPress={handleSaveProfile}
+              loading={saving}
+              style={styles.actionButton}
+            />
+          </View>
         </Card>
+      )}
 
-        <Button
-          title="ログアウト"
-          onPress={handleSignOut}
-          variant="secondary"
-          style={styles.signOutButton}
-        />
+      <Card style={styles.statsCard}>
+        <Text variant="heading3" weight="semibold" style={styles.statsTitle}>
+          アカウント情報
+        </Text>
 
-        <View style={styles.footer}>
-          <Text variant="caption" color="gray" style={styles.versionText}>
-            Fitness Tracker v1.0.0
+        <View style={styles.statRow}>
+          <Text variant="body" color="gray">
+            登録日
+          </Text>
+          <Text variant="body">
+            {user?.created_at
+              ? new Date(user.created_at).toLocaleDateString("ja-JP")
+              : "不明"}
           </Text>
         </View>
-      </ScrollView>
-    </DrawerLayout>
-  )
-}
+
+        <View style={styles.statRow}>
+          <Text variant="body" color="gray">
+            プロフィール更新日
+          </Text>
+          <Text variant="body">
+            {profile?.updated_at
+              ? new Date(profile.updated_at).toLocaleDateString("ja-JP")
+              : "未更新"}
+          </Text>
+        </View>
+      </Card>
+
+      <Card style={styles.settingsCard}>
+        <Text variant="heading3" weight="semibold" style={styles.settingsTitle}>
+          設定
+        </Text>
+
+        <TouchableOpacity style={styles.settingItem}>
+          <Text variant="body">🔔 通知設定</Text>
+          <Text variant="body" color="gray">
+            {">"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.settingItem}>
+          <Text variant="body">📊 データのエクスポート</Text>
+          <Text variant="body" color="gray">
+            {">"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.settingItem}>
+          <Text variant="body">🔒 プライバシーポリシー</Text>
+          <Text variant="body" color="gray">
+            {">"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.settingItem}>
+          <Text variant="body">📝 利用規約</Text>
+          <Text variant="body" color="gray">
+            {">"}
+          </Text>
+        </TouchableOpacity>
+      </Card>
+
+      <View style={styles.footer}>
+        <Text variant="caption" color="gray" style={styles.versionText}>
+          Fitness Tracker v1.0.0
+        </Text>
+      </View>
+    </ScreenWrapper>
+  );
+};
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   profileCard: {
     marginBottom: spacing.lg,
   },
   profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: spacing.md,
   },
   avatarContainer: {
@@ -271,13 +271,13 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   avatarText: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: "bold",
+    color: "#fff",
   },
   profileInfo: {
     flex: 1,
@@ -287,11 +287,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: 8,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   editButtonText: {
     color: colors.gray[700],
-    fontWeight: '500',
+    fontWeight: "500",
   },
   editCard: {
     marginBottom: spacing.lg,
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   editActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.md,
     marginTop: spacing.md,
   },
@@ -314,9 +314,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.gray[200],
@@ -328,9 +328,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.gray[200],
@@ -339,10 +339,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   footer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingBottom: spacing.lg,
   },
   versionText: {
-    textAlign: 'center',
+    textAlign: "center",
   },
-})
+});

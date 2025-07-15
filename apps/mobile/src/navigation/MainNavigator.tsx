@@ -5,14 +5,25 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import Ionicons from 'react-native-vector-icons/Ionicons'
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native'
 import { DrawerContentScrollView, DrawerItemList, DrawerContentComponentProps } from '@react-navigation/drawer'
+import { supabase } from '../lib/supabase'
+import { colors } from '@fitness-tracker/ui'
+import { useAuth } from '../hooks/useAuth'
+import { getProfile } from '../lib/supabase'
 
 // 画面をインポート
-import { DashboardScreen } from '../screens/DashboardScreen'
+import { HomeScreen } from '../screens/HomeScreen'
 import { WorkoutScreen } from '../screens/WorkoutScreen'
 import { GoalsScreen } from '../screens/GoalsScreen'
 import { MeasurementScreen } from '../screens/MeasurementScreen'
 import { ProfileScreen } from '../screens/ProfileScreen'
-// import { QRScannerScreen } from '../screens/QRScannerScreen'
+import { FacilitiesScreen } from '../screens/FacilitiesScreen'
+import { ActivityLogsScreen } from '../screens/ActivityLogsScreen'
+import { PointsScreen } from '../screens/PointsScreen'
+import { QRScannerScreen } from '../screens/QRScannerScreen'
+import { CompanyScreen } from '../screens/CompanyScreen'
+import { UserMembershipsScreen } from '../screens/UserMembershipsScreen'
+import { ActivityTypesScreen } from '../screens/ActivityTypesScreen'
+import { SettingsScreen } from '../screens/SettingsScreen'
 
 const Tab = createBottomTabNavigator()
 const Drawer = createDrawerNavigator()
@@ -22,15 +33,15 @@ function BottomTabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#2563EB',
-        tabBarInactiveTintColor: '#6B7280',
+        tabBarActiveTintColor: colors.purple[500],
+        tabBarInactiveTintColor: colors.gray[500],
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: colors.white,
           borderTopWidth: 1,
-          borderTopColor: '#E5E7EB',
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
+          borderTopColor: colors.purple[100],
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 80,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -40,7 +51,7 @@ function BottomTabNavigator() {
     >
       <Tab.Screen
         name="Dashboard"
-        component={DashboardScreen}
+        component={HomeScreen}
         options={{
           title: 'ホーム',
           headerShown: false,
@@ -99,40 +110,65 @@ function BottomTabNavigator() {
 
 // カスタムドロワーコンテンツ
 function CustomDrawerContent(props: DrawerContentComponentProps) {
+  const { user } = useAuth()
+  const [displayName, setDisplayName] = React.useState<string>('ゲストユーザー')
+  
+  React.useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!user) {
+        setDisplayName('ゲストユーザー')
+        return
+      }
+      
+      try {
+        const { data: profile } = await getProfile(user.id)
+        if (profile?.display_name) {
+          setDisplayName(profile.display_name)
+        } else {
+          // Use email as fallback
+          setDisplayName(user.email || 'ユーザー')
+        }
+      } catch (error) {
+        console.error('Error loading profile for drawer:', error)
+        setDisplayName(user.email || 'ユーザー')
+      }
+    }
+    
+    loadUserProfile()
+  }, [user])
   
   const handleSignOut = async () => {
     try {
-      console.log('ログアウト処理')
-      // TODO: 実際のログアウト処理を実装
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('ログアウトエラー:', error)
+      }
     } catch (error) {
       console.error('ログアウトエラー:', error)
     }
   }
 
   return (
-    <DrawerContentScrollView {...props} style={styles.drawerContainer}>
-      {/* ドロワーヘッダー */}
+    <View style={styles.drawerContainer}>
+      {/* ドロワーヘッダー - 固定 */}
       <View style={styles.drawerHeader}>
-        <View style={styles.drawerIconContainer}>
-          <MaterialCommunityIcons name="dumbbell" size={32} color="#FFFFFF" />
-        </View>
         <Text style={styles.drawerTitle}>FitTracker</Text>
-        <Text style={styles.drawerSubtitle}>{'ゲストユーザー'}</Text>
+        <Text style={styles.drawerSubtitle}>{displayName}</Text>
       </View>
 
-      {/* ドロワーアイテム */}
-      <View style={styles.drawerItemsContainer}>
+      {/* ドロワーアイテム - スクロール可能 */}
+      <DrawerContentScrollView {...props} style={styles.drawerItemsContainer} contentContainerStyle={styles.drawerItemsContent}>
         <DrawerItemList {...props} />
-      </View>
+      </DrawerContentScrollView>
 
-      {/* ログアウトボタン */}
+      {/* ログアウトボタン - 固定 */}
       <View style={styles.drawerFooter}>
         <TouchableOpacity style={styles.logoutButton} onPress={handleSignOut}>
           <Ionicons name="log-out-outline" size={24} color="#EF4444" />
           <Text style={styles.logoutText}>ログアウト</Text>
         </TouchableOpacity>
       </View>
-    </DrawerContentScrollView>
+    </View>
   )
 }
 
@@ -142,29 +178,34 @@ export function MainNavigator() {
     <Drawer.Navigator
       drawerContent={(props: any) => <CustomDrawerContent {...props} />}
       screenOptions={{
-        drawerActiveTintColor: '#2563EB',
-        drawerInactiveTintColor: '#6B7280',
+        drawerActiveTintColor: colors.purple[500],
+        drawerInactiveTintColor: colors.gray[600],
         drawerLabelStyle: {
           fontSize: 16,
           fontWeight: '600',
-          marginLeft: -16,
+          marginLeft: 8,
         },
         drawerItemStyle: {
-          borderRadius: 8,
-          paddingHorizontal: 8,
+          borderRadius: 12,
+          paddingHorizontal: 16,
+          paddingVertical: 8,
+          marginHorizontal: 0,
+          marginVertical: 0,
         },
+        drawerActiveBackgroundColor: colors.purple[50],
+        drawerInactiveBackgroundColor: 'transparent',
         headerStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: colors.white,
           elevation: 0,
           shadowOpacity: 0,
           borderBottomWidth: 1,
-          borderBottomColor: '#E5E7EB',
+          borderBottomColor: colors.purple[100],
         },
         headerTitleStyle: {
           fontWeight: '700',
           fontSize: 20,
         },
-        headerTintColor: '#1F2937',
+        headerTintColor: colors.purple[700],
       }}
     >
       <Drawer.Screen
@@ -179,46 +220,46 @@ export function MainNavigator() {
         }}
       />
       <Drawer.Screen
-        name="WorkoutHistory"
-        component={DashboardScreen} // 仮で設定
+        name="Facilities"
+        component={FacilitiesScreen}
         options={{
-          title: 'ワークアウト履歴',
+          title: '施設一覧',
+          drawerIcon: ({ color, size }: any) => (
+            <Ionicons name="business-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="ActivityLogs"
+        component={ActivityLogsScreen}
+        options={{
+          title: 'アクティビティログ',
           drawerIcon: ({ color, size }: any) => (
             <Ionicons name="time-outline" size={size} color={color} />
           ),
         }}
       />
       <Drawer.Screen
-        name="Progress"
-        component={DashboardScreen} // 仮で設定
+        name="MeasurementHistory"
+        component={MeasurementScreen}
         options={{
-          title: '進捗',
+          title: '体測定履歴',
           drawerIcon: ({ color, size }: any) => (
-            <Ionicons name="analytics-outline" size={size} color={color} />
+            <Ionicons name="scale-outline" size={size} color={color} />
           ),
         }}
       />
       <Drawer.Screen
-        name="Templates"
-        component={DashboardScreen} // 仮で設定
+        name="Points"
+        component={PointsScreen}
         options={{
-          title: 'テンプレート',
+          title: 'ポイント',
           drawerIcon: ({ color, size }: any) => (
-            <Ionicons name="document-text-outline" size={size} color={color} />
+            <Ionicons name="star-outline" size={size} color={color} />
           ),
         }}
       />
       <Drawer.Screen
-        name="Settings"
-        component={DashboardScreen} // 仮で設定
-        options={{
-          title: '設定',
-          drawerIcon: ({ color, size }: any) => (
-            <Ionicons name="settings-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      {/* <Drawer.Screen
         name="QRScanner"
         component={QRScannerScreen}
         options={{
@@ -227,7 +268,47 @@ export function MainNavigator() {
             <Ionicons name="qr-code-outline" size={size} color={color} />
           ),
         }}
-      /> */}
+      />
+      <Drawer.Screen
+        name="Company"
+        component={CompanyScreen}
+        options={{
+          title: '会社情報',
+          drawerIcon: ({ color, size }: any) => (
+            <Ionicons name="business-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="UserMemberships"
+        component={UserMembershipsScreen}
+        options={{
+          title: 'メンバーシップ',
+          drawerIcon: ({ color, size }: any) => (
+            <Ionicons name="card-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="ActivityTypes"
+        component={ActivityTypesScreen}
+        options={{
+          title: 'アクティビティタイプ',
+          drawerIcon: ({ color, size }: any) => (
+            <Ionicons name="play-circle-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          title: '設定',
+          drawerIcon: ({ color, size }: any) => (
+            <Ionicons name="settings-outline" size={size} color={color} />
+          ),
+        }}
+      />
     </Drawer.Navigator>
   )
 }
@@ -235,52 +316,49 @@ export function MainNavigator() {
 const styles = StyleSheet.create({
   drawerContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
   drawerHeader: {
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.purple[500],
     padding: 20,
-    paddingTop: 50,
-    marginTop: -50,
-  },
-  drawerIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
+    paddingTop: 70,
+    paddingBottom: 40,
   },
   drawerTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: colors.white,
     marginBottom: 4,
   },
   drawerSubtitle: {
     fontSize: 14,
-    color: '#DBEAFE',
+    color: colors.purple[100],
   },
   drawerItemsContainer: {
     flex: 1,
-    paddingTop: 10,
+    paddingHorizontal: 0,
+  },
+  drawerItemsContent: {
+    paddingTop: 20,
+    paddingBottom: 20,
   },
   drawerFooter: {
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: colors.purple[100],
     padding: 20,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: colors.pink[50],
+    marginHorizontal: 0,
   },
   logoutText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#EF4444',
+    color: colors.pink[600],
     marginLeft: 12,
   },
 })

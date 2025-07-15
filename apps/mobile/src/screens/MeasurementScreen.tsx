@@ -1,22 +1,24 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import {
   View,
-  Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   ScrollView,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   FlatList,
+  RefreshControl,
 } from 'react-native'
-import { getCurrentUser, supabase } from '../lib/supabase'
+import { Text, Card, Button } from '@fitness-tracker/ui'
+import { colors, spacing } from '@fitness-tracker/ui'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../hooks/useAuth'
+import { useNavigation } from '@react-navigation/native'
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import { LineChart } from 'react-native-chart-kit'
 import { Dimensions } from 'react-native'
-import { DrawerLayout } from '../components/DrawerLayout'
+import { ScreenWrapper } from '../components/shared'
 
 const screenWidth = Dimensions.get('window').width
 
@@ -53,34 +55,22 @@ interface MeasurementRecord {
   notes?: string
 }
 
-export function MeasurementScreen({ navigation }: any) {
-  const [user, setUser] = useState<any>(null)
+export const MeasurementScreen = () => {
+  const { user } = useAuth()
+  const navigation = useNavigation()
   const [measurementData, setMeasurementData] = useState<MeasurementData>({})
   const [loading, setLoading] = useState(false)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [activeTab, setActiveTab] = useState<'record' | 'history' | 'graph'>('record')
   const [measurements, setMeasurements] = useState<MeasurementRecord[]>([])
   const [graphPeriod, setGraphPeriod] = useState<'week' | 'month' | 'year'>('month')
-
-  useEffect(() => {
-    loadUser()
-  }, [])
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     if (user && (activeTab === 'history' || activeTab === 'graph')) {
       loadMeasurements()
     }
   }, [user, activeTab])
-
-  const loadUser = async () => {
-    try {
-      const { user: userData, error } = await getCurrentUser()
-      if (error) throw error
-      setUser(userData)
-    } catch (error) {
-      console.error('ユーザー情報取得エラー:', error)
-    }
-  }
 
   const loadMeasurements = async () => {
     if (!user) return
@@ -97,7 +87,14 @@ export function MeasurementScreen({ navigation }: any) {
       setMeasurements(data || [])
     } catch (error) {
       console.error('測定履歴取得エラー:', error)
+    } finally {
+      setRefreshing(false)
     }
+  }
+
+  const handleRefresh = () => {
+    setRefreshing(true)
+    loadMeasurements()
   }
 
   const graphData = useMemo(() => {
@@ -233,7 +230,7 @@ export function MeasurementScreen({ navigation }: any) {
   }) => (
     <View style={styles.inputGroup}>
       <View style={styles.inputHeader}>
-        <MaterialCommunityIcons name={icon} size={16} color="#64748B" />
+        <MaterialCommunityIcons name={icon} size={16} color={colors.gray[600]} />
         <Text style={styles.inputLabel}>{label}</Text>
       </View>
       <View style={styles.inputContainer}>
@@ -242,7 +239,7 @@ export function MeasurementScreen({ navigation }: any) {
           value={measurementData[field] || ''}
           onChangeText={(value) => updateMeasurement(field, value)}
           placeholder={placeholder}
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={colors.gray[400]}
           keyboardType="decimal-pad"
         />
         <Text style={styles.inputUnit}>{unit}</Text>
@@ -251,17 +248,14 @@ export function MeasurementScreen({ navigation }: any) {
   )
 
   return (
-    <DrawerLayout title="体測定">
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }} 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+    <ScreenWrapper keyboardAvoiding={true}>
+        {/* ヘッダー */}
         <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <MaterialIcons name="arrow-back" size={24} color="#1E293B" />
+            <MaterialIcons name="arrow-back" size={24} color={colors.gray[700]} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>体測定</Text>
           <View style={styles.headerRight} />
@@ -276,7 +270,7 @@ export function MeasurementScreen({ navigation }: any) {
             <MaterialIcons 
               name="edit" 
               size={20} 
-              color={activeTab === 'record' ? '#2563EB' : '#64748B'} 
+              color={activeTab === 'record' ? colors.purple[500] : colors.gray[600]} 
             />
             <Text style={[styles.tabText, activeTab === 'record' && styles.activeTabText]}>
               記録
@@ -289,7 +283,7 @@ export function MeasurementScreen({ navigation }: any) {
             <MaterialIcons 
               name="history" 
               size={20} 
-              color={activeTab === 'history' ? '#2563EB' : '#64748B'} 
+              color={activeTab === 'history' ? colors.purple[500] : colors.gray[600]} 
             />
             <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>
               履歴
@@ -302,7 +296,7 @@ export function MeasurementScreen({ navigation }: any) {
             <MaterialIcons 
               name="show-chart" 
               size={20} 
-              color={activeTab === 'graph' ? '#2563EB' : '#64748B'} 
+              color={activeTab === 'graph' ? colors.purple[500] : colors.gray[600]} 
             />
             <Text style={[styles.tabText, activeTab === 'graph' && styles.activeTabText]}>
               グラフ
@@ -311,12 +305,16 @@ export function MeasurementScreen({ navigation }: any) {
         </View>
 
         {activeTab === 'record' ? (
-          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            style={styles.scrollView} 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
           {/* 日付選択 */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>測定日</Text>
             <View style={styles.dateContainer}>
-              <MaterialIcons name="calendar-today" size={20} color="#64748B" />
+              <MaterialIcons name="calendar-today" size={20} color={colors.gray[600]} />
               <Text style={styles.dateText}>{date}</Text>
             </View>
           </View>
@@ -330,7 +328,7 @@ export function MeasurementScreen({ navigation }: any) {
                 field="weight"
                 unit="kg"
                 placeholder="70.0"
-                icon="scale-bathroom"
+                icon="scale"
               />
               <MeasurementInput
                 label="体脂肪率"
@@ -462,7 +460,7 @@ export function MeasurementScreen({ navigation }: any) {
               value={measurementData.notes || ''}
               onChangeText={(value) => updateMeasurement('notes', value)}
               placeholder="測定時の状況や感想を記録..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.gray[400]}
               multiline
               numberOfLines={4}
             />
@@ -470,15 +468,18 @@ export function MeasurementScreen({ navigation }: any) {
         </ScrollView>
         ) : activeTab === 'history' ? (
           <FlatList
-            style={styles.historyList}
+            style={styles.scrollView}
             data={measurements}
             keyExtractor={(item) => item.id}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            }
             renderItem={({ item }) => (
               <View style={styles.historyCard}>
                 <View style={styles.historyHeader}>
                   <Text style={styles.historyDate}>{item.date}</Text>
                   {item.notes && (
-                    <MaterialIcons name="note" size={16} color="#64748B" />
+                    <MaterialIcons name="note" size={16} color={colors.gray[600]} />
                   )}
                 </View>
                 <View style={styles.historyData}>
@@ -532,14 +533,20 @@ export function MeasurementScreen({ navigation }: any) {
             )}
             ListEmptyComponent={
               <View style={styles.emptyHistory}>
-                <MaterialIcons name="history" size={48} color="#CBD5E1" />
+                <MaterialIcons name="history" size={48} color={colors.gray[300]} />
                 <Text style={styles.emptyText}>まだ測定記録がありません</Text>
               </View>
             }
-            contentContainerStyle={styles.historyContent}
+            contentContainerStyle={styles.scrollContent}
           />
         ) : (
-          <ScrollView style={styles.graphContainer}>
+          <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            }
+          >
             {/* 期間選択 */}
             <View style={styles.periodSelector}>
               <TouchableOpacity
@@ -587,15 +594,15 @@ export function MeasurementScreen({ navigation }: any) {
                     backgroundGradientFrom: '#FFFFFF',
                     backgroundGradientTo: '#FFFFFF',
                     decimalPlaces: 1,
-                    color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
-                    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                    color: (opacity = 1) => `rgba(168, 85, 247, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
                     style: {
                       borderRadius: 16
                     },
                     propsForDots: {
                       r: '6',
                       strokeWidth: '2',
-                      stroke: '#2563EB'
+                      stroke: colors.purple[500]
                     }
                   }}
                   bezier
@@ -606,7 +613,7 @@ export function MeasurementScreen({ navigation }: any) {
                 />
               ) : (
                 <View style={styles.noDataContainer}>
-                  <MaterialIcons name="insert-chart" size={48} color="#CBD5E1" />
+                  <MaterialIcons name="insert-chart" size={48} color={colors.gray[300]} />
                   <Text style={styles.noDataText}>データがありません</Text>
                 </View>
               )}
@@ -631,15 +638,15 @@ export function MeasurementScreen({ navigation }: any) {
                     backgroundGradientFrom: '#FFFFFF',
                     backgroundGradientTo: '#FFFFFF',
                     decimalPlaces: 1,
-                    color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
-                    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                    color: (opacity = 1) => `rgba(34, 197, 94, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
                     style: {
                       borderRadius: 16
                     },
                     propsForDots: {
                       r: '6',
                       strokeWidth: '2',
-                      stroke: '#10B981'
+                      stroke: colors.mint[500]
                     }
                   }}
                   bezier
@@ -650,7 +657,7 @@ export function MeasurementScreen({ navigation }: any) {
                 />
               ) : (
                 <View style={styles.noDataContainer}>
-                  <MaterialIcons name="insert-chart" size={48} color="#CBD5E1" />
+                  <MaterialIcons name="insert-chart" size={48} color={colors.gray[300]} />
                   <Text style={styles.noDataText}>データがありません</Text>
                 </View>
               )}
@@ -666,12 +673,12 @@ export function MeasurementScreen({ navigation }: any) {
                     datasets: [
                       {
                         data: graphData.systolicData,
-                        color: (opacity = 1) => `rgba(239, 68, 68, ${opacity})`, // 赤色（最高血圧）
+                        color: (opacity = 1) => `rgba(236, 72, 153, ${opacity})`, // ピンク（最高血圧）
                         strokeWidth: 2
                       },
                       {
                         data: graphData.diastolicData,
-                        color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`, // 青色（最低血圧）
+                        color: (opacity = 1) => `rgba(168, 85, 247, ${opacity})`, // 紫（最低血圧）
                         strokeWidth: 2
                       }
                     ],
@@ -685,8 +692,8 @@ export function MeasurementScreen({ navigation }: any) {
                     backgroundGradientFrom: '#FFFFFF',
                     backgroundGradientTo: '#FFFFFF',
                     decimalPlaces: 0,
-                    color: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                    color: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
                     style: {
                       borderRadius: 16
                     },
@@ -703,7 +710,7 @@ export function MeasurementScreen({ navigation }: any) {
                 />
               ) : (
                 <View style={styles.noDataContainer}>
-                  <MaterialIcons name="insert-chart" size={48} color="#CBD5E1" />
+                  <MaterialIcons name="insert-chart" size={48} color={colors.gray[300]} />
                   <Text style={styles.noDataText}>データがありません</Text>
                 </View>
               )}
@@ -722,7 +729,7 @@ export function MeasurementScreen({ navigation }: any) {
               <MaterialIcons 
                 name="save" 
                 size={20} 
-                color="#FFFFFF" 
+                color={colors.white} 
                 style={styles.saveIcon} 
               />
               <Text style={styles.saveButtonText}>
@@ -731,38 +738,34 @@ export function MeasurementScreen({ navigation }: any) {
             </TouchableOpacity>
           </View>
         )}
-      </KeyboardAvoidingView>
-    </DrawerLayout>
+    </ScreenWrapper>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    backgroundColor: colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: colors.gray[200],
+    height: 70,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F1F5F9',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.pink[100],
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
-    color: '#1E293B',
+    color: colors.gray[900],
   },
   headerRight: {
     width: 40,
@@ -770,21 +773,24 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: spacing.lg,
+  },
   section: {
-    padding: 20,
+    padding: spacing.lg,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 16,
+    color: colors.gray[900],
+    marginBottom: spacing.md,
   },
   dateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: 12,
-    padding: 16,
+    padding: spacing.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -793,17 +799,17 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 16,
-    color: '#1E293B',
-    marginLeft: 12,
+    color: colors.gray[900],
+    marginLeft: spacing.sm,
     fontWeight: '500',
   },
   inputGrid: {
-    gap: 16,
+    gap: spacing.md,
   },
   inputGroup: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: 12,
-    padding: 16,
+    padding: spacing.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -818,8 +824,8 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
-    marginLeft: 8,
+    color: colors.gray[700],
+    marginLeft: spacing.xs,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -828,28 +834,28 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#1E293B',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#F8FAFC',
+    color: colors.gray[900],
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.pink[50],
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.gray[200],
   },
   inputUnit: {
     fontSize: 14,
-    color: '#64748B',
-    marginLeft: 12,
+    color: colors.gray[600],
+    marginLeft: spacing.sm,
     fontWeight: '500',
   },
   notesInput: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: 12,
-    padding: 16,
+    padding: spacing.md,
     fontSize: 16,
-    color: '#1E293B',
+    color: colors.gray[900],
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.gray[200],
     textAlignVertical: 'top',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -858,67 +864,62 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   footer: {
-    padding: 20,
-    backgroundColor: '#FFFFFF',
+    padding: spacing.lg,
+    backgroundColor: colors.white,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: colors.gray[200],
   },
   saveButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.purple[500],
     borderRadius: 12,
-    padding: 16,
+    padding: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
   saveButtonDisabled: {
-    backgroundColor: '#9CA3AF',
+    backgroundColor: colors.gray[400],
   },
   saveIcon: {
-    marginRight: 8,
+    marginRight: spacing.sm,
   },
   saveButtonText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 16,
     fontWeight: '600',
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: colors.gray[200],
   },
   tab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    gap: 8,
+    paddingVertical: spacing.md,
+    gap: spacing.xs,
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: '#2563EB',
+    borderBottomColor: colors.purple[500],
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#64748B',
+    color: colors.gray[600],
   },
   activeTabText: {
-    color: '#2563EB',
-  },
-  historyList: {
-    flex: 1,
-  },
-  historyContent: {
-    padding: 20,
-    gap: 12,
+    color: colors.purple[500],
   },
   historyCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: 12,
-    padding: 16,
+    padding: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -934,7 +935,7 @@ const styles = StyleSheet.create({
   historyDate: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1E293B',
+    color: colors.gray[900],
   },
   historyData: {
     flexDirection: 'row',
@@ -947,21 +948,21 @@ const styles = StyleSheet.create({
   },
   historyLabel: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.gray[600],
     marginBottom: 2,
   },
   historyValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1E293B',
+    color: colors.gray[900],
   },
   historyNotes: {
     fontSize: 14,
-    color: '#64748B',
-    marginTop: 12,
-    paddingTop: 12,
+    color: colors.gray[600],
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: colors.gray[100],
   },
   emptyHistory: {
     flex: 1,
@@ -971,46 +972,43 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#94A3B8',
-    marginTop: 16,
+    color: colors.gray[500],
+    marginTop: spacing.md,
     textAlign: 'center',
-  },
-  graphContainer: {
-    flex: 1,
   },
   periodSelector: {
     flexDirection: 'row',
-    padding: 20,
-    gap: 12,
+    padding: spacing.lg,
+    gap: spacing.sm,
   },
   periodButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.white,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.gray[200],
   },
   activePeriod: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#2563EB',
+    backgroundColor: colors.purple[100],
+    borderColor: colors.purple[500],
   },
   periodText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#64748B',
+    color: colors.gray[600],
   },
   activePeriodText: {
-    color: '#2563EB',
+    color: colors.purple[500],
   },
   chartCard: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-    backgroundColor: '#FFFFFF',
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.white,
     borderRadius: 16,
-    padding: 20,
+    padding: spacing.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -1020,8 +1018,8 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 16,
+    color: colors.gray[900],
+    marginBottom: spacing.md,
   },
   noDataContainer: {
     paddingVertical: 40,
@@ -1029,7 +1027,7 @@ const styles = StyleSheet.create({
   },
   noDataText: {
     fontSize: 14,
-    color: '#94A3B8',
-    marginTop: 12,
+    color: colors.gray[500],
+    marginTop: spacing.sm,
   },
 })

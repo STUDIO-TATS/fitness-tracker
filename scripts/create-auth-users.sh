@@ -37,6 +37,21 @@ curl -s -X POST "${SUPABASE_URL}/auth/v1/admin/users" \
     }
   }' | jq .
 
+# 一般ユーザー1
+echo "Creating user1@example.com..."
+curl -s -X POST "${SUPABASE_URL}/auth/v1/admin/users" \
+  -H "apikey: ${SERVICE_ROLE_KEY}" \
+  -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user1@example.com",
+    "password": "User123!",
+    "email_confirm": true,
+    "user_metadata": {
+      "name": "田中太郎"
+    }
+  }' | jq .
+
 # 一般ユーザー2
 echo "Creating user2@example.com..."
 curl -s -X POST "${SUPABASE_URL}/auth/v1/admin/users" \
