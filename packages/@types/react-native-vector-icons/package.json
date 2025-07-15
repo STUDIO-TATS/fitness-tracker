@@ -1,0 +1,22 @@
+{
+  "name": "@types/react-native-vector-icons",
+  "version": "1.0.0",
+  "description": "TypeScript definitions for react-native-vector-icons",
+  "types": "index.d.ts",
+  "main": "index.d.ts",
+  "files": [
+    "index.d.ts",
+    "**/*.d.ts"
+  ],
+  "keywords": [
+    "react-native",
+    "vector-icons",
+    "typescript",
+    "types"
+  ],
+  "author": "FitTracker Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "react-native-vector-icons": "*"
+  }
+}

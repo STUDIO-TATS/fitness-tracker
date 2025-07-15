@@ -1,0 +1,86 @@
+# Supabase CLI Configuration
+
+# リンクされているプロジェクトのReference ID
+project_id = "kbihmibidomoxeiysadx"
+
+[api]
+# REST APIのポート設定
+enabled = true
+# ポートを変更する場合はコメントアウトを外して設定
+# port = 54321
+# schemas = ["public", "storage", "graphql_public"]
+# extra_search_path = ["public", "extensions"]
+# max_rows = 1000
+
+[db]
+# データベースのポート設定
+# port = 54322
+# shadow_port = 54320
+# major_version = 15
+
+[db.pooler]
+# 接続プーリング設定
+enabled = false
+# port = 54329
+# pool_mode = "transaction"
+# default_pool_size = 20
+# max_client_conn = 100
+
+[realtime]
+# リアルタイム機能の設定
+enabled = true
+# ip_version = "IPv4"
+
+[studio]
+# Supabase Studioの設定
+enabled = true
+# port = 54323
+# api_url = "http://localhost"
+
+[inbucket]
+# メールテスト用のInbucket設定
+enabled = true
+# port = 54324
+
+[storage]
+# ストレージの設定
+enabled = true
+# file_size_limit = "50MiB"
+
+[auth]
+# 認証の設定
+enabled = true
+# site_url = "http://localhost:3000"
+# additional_redirect_urls = ["https://localhost:3000"]
+# jwt_expiry = 3600
+# enable_refresh_token_rotation = true
+# refresh_token_reuse_interval = 10
+# enable_signup = true
+
+[auth.email]
+# メール認証の設定
+# enable_signup = true
+# double_confirm_changes = true
+# enable_confirmations = true
+
+[auth.sms]
+# SMS認証の設定
+# enable_signup = true
+# enable_confirmations = true
+
+# 外部認証プロバイダーの設定例
+# [auth.external.github]
+# enabled = true
+# client_id = "env(SUPABASE_AUTH_GITHUB_CLIENT_ID)"
+# secret = "env(SUPABASE_AUTH_GITHUB_SECRET)"
+# redirect_uri = "http://localhost:54321/auth/v1/callback"
+
+[analytics]
+# 分析機能の設定
+enabled = false
+# port = 54327
+# backend = "postgres"
+
+# ローカル開発用の設定
+[local]
+# ローカル環境でのみ有効な設定

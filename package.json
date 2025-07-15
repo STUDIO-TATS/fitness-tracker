@@ -1,0 +1,46 @@
+{
+  "name": "fitness-tracker",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=web",
+    "dev:mobile": "cd apps/mobile && pnpm start",
+    "dev:mobile:ios": "cd apps/mobile && pnpm ios",
+    "dev:mobile:android": "cd apps/mobile && pnpm android",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:status": "supabase status",
+    "db:reset": "supabase db reset",
+    "db:migrate:new": "supabase migration new",
+    "db:migrate:list": "supabase migration list",
+    "db:migrate:up": "supabase migration up",
+    "db:diff": "supabase db diff",
+    "db:dump": "supabase db dump --local -f supabase/schema_dump.sql",
+    "db:types": "supabase gen types typescript --local > types/database.ts",
+    "db:setup": "supabase start && supabase db reset",
+    "db:reset:remote": "echo '⚠️  警告: リモートDBをリセットします！' && read -p '続行しますか？ (y/N): ' -n 1 -r && echo && [[ $REPLY =~ ^[Yy]$ ]] && supabase db reset --linked",
+    "db:push:remote": "supabase db push --linked",
+    "db:pull:remote": "supabase db pull",
+    "db:migrate:repair:remote": "supabase migration repair",
+    "db:dump:remote": "supabase db dump --linked -f supabase/remote_dump.sql",
+    "db:types:remote": "supabase gen types typescript --linked > types/database.ts",
+    "db:link": "supabase link",
+    "db:unlink": "supabase unlink",
+    "preinstall": "npx only-allow pnpm"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.4",
+    "tsx": "^4.7.0",
+    "@supabase/supabase-js": "^2.51.0",
+    "dotenv": "^16.4.5"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}
