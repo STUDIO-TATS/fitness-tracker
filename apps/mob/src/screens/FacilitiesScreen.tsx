@@ -9,9 +9,13 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { colors } from '../constants/colors';
+import { icons } from '../constants/icons';
+import { theme } from '../constants/theme';
+import { useI18n } from '../hooks/useI18n';
 import { commonStyles, spacing, typography, layout, borderRadius, shadows } from '../constants/styles';
 import { supabase } from '../lib/supabase';
 
@@ -34,6 +38,7 @@ interface Facility {
 
 export default function FacilitiesScreen() {
   const navigation = useNavigation();
+  const { t } = useI18n();
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -209,26 +214,26 @@ export default function FacilitiesScreen() {
   const getFacilityIcon = (facilityType: string) => {
     switch (facilityType) {
       case 'gym':
-        return 'barbell';
+        return icons.facility.gym;
       case 'pool':
-        return 'water';
+        return icons.facility.pool;
       case 'yoga_studio':
-        return 'flower';
+        return icons.facility.studio;
       default:
-        return 'business';
+        return icons.facility.business;
     }
   };
 
   const getFacilityTypeLabel = (facilityType: string) => {
     switch (facilityType) {
       case 'gym':
-        return 'ジム';
+        return t('facilities.gym');
       case 'pool':
-        return 'プール';
+        return t('facilities.pool');
       case 'yoga_studio':
-        return 'ヨガスタジオ';
+        return t('facilities.yogaStudio');
       default:
-        return 'フィットネス';
+        return t('facilities.title');
     }
   };
 
@@ -282,31 +287,35 @@ export default function FacilitiesScreen() {
       onPress={() => navigation.navigate('FacilityDetail' as never, { facility: item } as never)}
     >
       <View style={styles.facilityHeader}>
-        <View style={styles.facilityIcon}>
+        <LinearGradient
+          colors={theme.colors.gradient.primary}
+          style={styles.facilityIcon}
+        >
           <Ionicons
-            name={getFacilityIcon(item.facility_type) as any}
+            name={getFacilityIcon(item.facility_type)}
             size={24}
-            color={colors.primary}
+            color={theme.colors.text.inverse}
           />
-        </View>
+        </LinearGradient>
         <View style={styles.facilityInfo}>
           <Text style={styles.facilityName}>{item.name}</Text>
           <Text style={styles.facilityType}>{getFacilityTypeLabel(item.facility_type)}</Text>
           <Text style={styles.companyName}>{item.companies?.name}</Text>
         </View>
+        <Ionicons name={icons.navigation.forward} size={20} color={theme.colors.text.tertiary} />
       </View>
 
       <View style={styles.facilityDetails}>
         <View style={styles.detailRow}>
-          <Ionicons name="location-outline" size={16} color={colors.gray[600]} />
+          <Ionicons name={icons.activity.locationOutline} size={16} color={theme.colors.text.secondary} />
           <Text style={styles.detailText}>{item.address}</Text>
         </View>
         <View style={styles.detailRow}>
-          <Ionicons name="call-outline" size={16} color={colors.gray[600]} />
+          <Ionicons name={icons.facility.phoneOutline} size={16} color={theme.colors.text.secondary} />
           <Text style={styles.detailText}>{item.phone}</Text>
         </View>
         <View style={styles.detailRow}>
-          <Ionicons name="time-outline" size={16} color={colors.gray[600]} />
+          <Ionicons name={icons.activity.time} size={16} color={theme.colors.text.secondary} />
           <Text style={styles.detailText}>{getOpeningHours(item.opening_hours)}</Text>
         </View>
       </View>
@@ -324,12 +333,17 @@ export default function FacilitiesScreen() {
 
       <View style={styles.facilityActions}>
         <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="qr-code-outline" size={20} color={colors.white} />
-          <Text style={styles.actionButtonText}>QRコード</Text>
+          <LinearGradient
+            colors={theme.colors.gradient.primary}
+            style={styles.actionButtonGradient}
+          >
+            <Ionicons name={icons.scanning.qrCodeOutline} size={20} color={theme.colors.text.inverse} />
+            <Text style={styles.actionButtonText}>QR{t('common.code', 'コード')}</Text>
+          </LinearGradient>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, styles.secondaryButton]}>
-          <Ionicons name="call-outline" size={20} color={colors.primary} />
-          <Text style={[styles.actionButtonText, styles.secondaryButtonText]}>電話</Text>
+        <TouchableOpacity style={styles.secondaryButton}>
+          <Ionicons name={icons.facility.phoneOutline} size={20} color={theme.colors.action.primary} />
+          <Text style={styles.secondaryButtonText}>{t('facilities.call')}</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -337,16 +351,16 @@ export default function FacilitiesScreen() {
 
   if (loading) {
     return (
-      <ScreenWrapper backgroundColor={colors.purple[50]}>
+      <ScreenWrapper backgroundColor={theme.colors.background.tertiary}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>施設を読み込み中...</Text>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       </ScreenWrapper>
     );
   }
 
   return (
-    <ScreenWrapper backgroundColor={colors.purple[50]}>
+    <ScreenWrapper backgroundColor={theme.colors.background.tertiary}>
       <FlatList
         data={facilities}
         renderItem={renderFacilityItem}
@@ -355,18 +369,28 @@ export default function FacilitiesScreen() {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.screenTitle}>施設一覧</Text>
+            <Text style={styles.screenTitle}>{t('facilities.title')}</Text>
             <TouchableOpacity style={styles.filterButton}>
-              <Ionicons name="filter" size={20} color={colors.purple[600]} />
+              <LinearGradient
+                colors={theme.colors.gradient.primary}
+                style={styles.filterButtonGradient}
+              >
+                <Ionicons name={icons.facility.filter} size={20} color={theme.colors.text.inverse} />
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="business-outline" size={64} color={colors.gray[400]} />
-            <Text style={styles.emptyText}>施設が見つかりません</Text>
+            <Ionicons name={icons.facility.businessOutline} size={64} color={theme.colors.text.tertiary} />
+            <Text style={styles.emptyText}>{t('common.noData', '施設が見つかりません')}</Text>
             <TouchableOpacity style={styles.retryButton} onPress={fetchFacilities}>
-              <Text style={styles.retryButtonText}>再読み込み</Text>
+              <LinearGradient
+                colors={theme.colors.gradient.primary}
+                style={styles.retryButtonGradient}
+              >
+                <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         }
@@ -381,14 +405,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: layout.screenPadding,
-    paddingBottom: spacing.md,
+    paddingBottom: theme.spacing.md,
   },
   screenTitle: {
     ...typography.screenTitle,
-    color: colors.purple[700],
+    color: theme.colors.text.primary,
   },
   filterButton: {
-    padding: spacing.sm,
+    borderRadius: theme.borderRadius.full,
+    overflow: 'hidden',
+  },
+  filterButtonGradient: {
+    padding: theme.spacing.sm,
   },
   loadingContainer: {
     flex: 1,
@@ -397,49 +425,49 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     ...typography.body,
-    color: colors.gray[600],
+    color: theme.colors.text.secondary,
   },
   listContainer: {
     padding: layout.screenPadding,
   },
   facilityCard: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    ...shadows.md,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.lg,
+    ...theme.shadows.md,
   },
   facilityHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: theme.spacing.md,
   },
   facilityIcon: {
     width: 48,
     height: 48,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.primary + '20',
+    borderRadius: theme.borderRadius.full,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
+    marginRight: theme.spacing.md,
+    overflow: 'hidden',
   },
   facilityInfo: {
     flex: 1,
   },
   facilityName: {
     ...typography.cardTitle,
-    color: colors.gray[900],
-    marginBottom: spacing.xs,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xs,
   },
   facilityType: {
     ...typography.small,
-    color: colors.primary,
-    fontWeight: '600',
+    color: theme.colors.action.primary,
+    fontWeight: theme.fontWeight.semibold,
   },
   companyName: {
     ...typography.caption,
-    color: colors.gray[500],
-    marginTop: spacing.xs,
+    color: theme.colors.text.tertiary,
+    marginTop: theme.spacing.xs,
   },
   facilityDetails: {
     marginBottom: spacing.md,
@@ -451,8 +479,8 @@ const styles = StyleSheet.create({
   },
   detailText: {
     ...typography.small,
-    color: colors.gray[600],
-    marginLeft: spacing.sm,
+    color: theme.colors.text.secondary,
+    marginLeft: theme.spacing.sm,
     flex: 1,
   },
   amenitiesContainer: {
@@ -470,15 +498,15 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   amenityTag: {
-    backgroundColor: colors.mint[100],
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.sm,
+    backgroundColor: theme.colors.background.success,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.sm,
   },
   amenityText: {
     ...typography.caption,
-    color: colors.mint[700],
-    fontWeight: '500',
+    color: theme.colors.text.success,
+    fontWeight: theme.fontWeight.medium,
   },
   facilityActions: {
     flexDirection: 'row',
@@ -486,26 +514,37 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
+    borderRadius: theme.borderRadius.md,
+    overflow: 'hidden',
+  },
+  actionButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
-    gap: spacing.sm,
+    paddingVertical: theme.spacing.md,
+    gap: theme.spacing.sm,
   },
   actionButtonText: {
     ...typography.small,
-    color: colors.white,
-    fontWeight: '600',
+    color: theme.colors.text.inverse,
+    fontWeight: theme.fontWeight.semibold,
   },
   secondaryButton: {
-    backgroundColor: colors.primary + '20',
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.background.secondary,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: theme.colors.action.primary,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    gap: theme.spacing.sm,
   },
   secondaryButtonText: {
-    color: colors.primary,
+    ...typography.small,
+    color: theme.colors.action.primary,
+    fontWeight: theme.fontWeight.semibold,
   },
   emptyContainer: {
     flex: 1,
@@ -515,19 +554,21 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     ...typography.body,
-    color: colors.gray[600],
-    marginTop: spacing.md,
-    marginBottom: spacing.xl,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.xl,
   },
   retryButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
+    borderRadius: theme.borderRadius.md,
+    overflow: 'hidden',
+  },
+  retryButtonGradient: {
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
   },
   retryButtonText: {
     ...typography.small,
-    color: colors.white,
-    fontWeight: '600',
+    color: theme.colors.text.inverse,
+    fontWeight: theme.fontWeight.semibold,
   },
 });

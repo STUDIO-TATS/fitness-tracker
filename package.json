@@ -4,9 +4,9 @@
   "scripts": {
     "dev": "turbo run dev",
     "dev:web": "turbo run dev --filter=web",
-    "dev:mobile": "cd apps/mobile && pnpm start",
-    "dev:mobile:ios": "cd apps/mobile && pnpm ios",
-    "dev:mobile:android": "cd apps/mobile && pnpm android",
+    "dev:mob": "cd apps/mob && pnpm start",
+    "dev:mob:ios": "cd apps/mob && pnpm ios",
+    "dev:mob:android": "cd apps/mob && pnpm android",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

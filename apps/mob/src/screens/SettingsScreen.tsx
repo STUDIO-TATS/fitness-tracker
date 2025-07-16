@@ -7,19 +7,23 @@ import {
   Switch,
   ScrollView,
   Alert,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { colors } from '../constants/colors';
 import { useNotifications } from '../hooks/useNotifications';
+import { useI18n } from '../hooks/useI18n';
 import { commonStyles, spacing, typography, layout, borderRadius, shadows } from '../constants/styles';
 
 export default function SettingsScreen() {
   const navigation = useNavigation();
+  const { t, currentLanguage, changeLanguage, availableLanguages } = useI18n();
   const [notifications, setNotifications] = React.useState(true);
   const [darkMode, setDarkMode] = React.useState(false);
   const [biometric, setBiometric] = React.useState(false);
+  const [languageModalVisible, setLanguageModalVisible] = React.useState(false);
   const { scheduleNotification, scheduleDailyReminder, cancelAllNotifications } = useNotifications();
 
   const handleNotificationToggle = async (value: boolean) => {
@@ -27,8 +31,8 @@ export default function SettingsScreen() {
     if (value) {
       // 通知を有効化 - テスト通知を送信
       await scheduleNotification(
-        'フィットネストラッカー',
-        '通知が有効になりました！',
+        t('settings.notificationEnabled'),
+        t('settings.notificationEnabledMsg'),
         3
       );
       // 毎日のリマインダーを設定（例：朝8時）
@@ -40,34 +44,34 @@ export default function SettingsScreen() {
   };
 
   const handleSettingPress = (item: any) => {
-    switch (item.label) {
-      case 'ヘルプ':
+    switch (item.id) {
+      case 'help':
         navigation.navigate('Help' as never);
         break;
-      case '利用規約':
+      case 'terms':
         navigation.navigate('Terms' as never);
         break;
-      case 'プライバシーポリシー':
+      case 'privacy':
         navigation.navigate('Privacy' as never);
         break;
-      case 'データをエクスポート':
-        Alert.alert('データエクスポート', 'データのエクスポート機能は準備中です。');
+      case 'export':
+        Alert.alert(t('settings.dataExport'), t('settings.dataExportMsg'));
         break;
-      case 'キャッシュをクリア':
+      case 'clearCache':
         Alert.alert(
-          'キャッシュクリア',
-          'キャッシュをクリアしますか？',
+          t('settings.clearCacheTitle'),
+          t('settings.clearCacheMsg'),
           [
-            { text: 'キャンセル', style: 'cancel' },
-            { text: 'クリア', onPress: () => Alert.alert('完了', 'キャッシュをクリアしました。') }
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('settings.clear'), onPress: () => Alert.alert(t('settings.completed'), t('settings.cacheCleared')) }
           ]
         );
         break;
-      case 'メール通知':
-        Alert.alert('メール通知', 'メール通知設定は準備中です。');
+      case 'emailNotifications':
+        Alert.alert(t('settings.emailNotifications'), t('settings.emailNotificationMsg'));
         break;
-      case '言語':
-        Alert.alert('言語設定', '言語設定は準備中です。');
+      case 'language':
+        setLanguageModalVisible(true);
         break;
       default:
         break;
@@ -76,78 +80,88 @@ export default function SettingsScreen() {
 
   const settingSections = [
     {
-      title: '通知',
+      title: t('settings.notifications'),
       items: [
         {
+          id: 'pushNotifications',
           icon: 'notifications',
-          label: 'プッシュ通知',
+          label: t('settings.pushNotifications'),
           value: notifications,
           onValueChange: handleNotificationToggle,
           type: 'switch',
         },
         {
+          id: 'emailNotifications',
           icon: 'mail',
-          label: 'メール通知',
+          label: t('settings.emailNotifications'),
           type: 'link',
         },
       ],
     },
     {
-      title: 'アプリの設定',
+      title: t('settings.appearance'),
       items: [
         {
+          id: 'darkMode',
           icon: 'moon',
-          label: 'ダークモード',
+          label: t('settings.darkMode'),
           value: darkMode,
           onValueChange: setDarkMode,
           type: 'switch',
         },
         {
+          id: 'biometric',
           icon: 'finger-print',
-          label: '生体認証',
+          label: t('settings.biometric'),
           value: biometric,
           onValueChange: setBiometric,
           type: 'switch',
         },
         {
+          id: 'language',
           icon: 'language',
-          label: '言語',
+          label: t('settings.language'),
           type: 'link',
-          value: '日本語',
+          value: availableLanguages.find(lang => lang.code === currentLanguage)?.name || currentLanguage,
         },
       ],
     },
     {
-      title: 'データ管理',
+      title: t('settings.dataManagement'),
       items: [
         {
+          id: 'export',
           icon: 'cloud-download',
-          label: 'データをエクスポート',
+          label: t('settings.exportData'),
           type: 'link',
         },
         {
+          id: 'clearCache',
           icon: 'trash',
-          label: 'キャッシュをクリア',
+          label: t('settings.clearCache'),
           type: 'link',
         },
       ],
     },
     {
-      title: 'その他',
+      title: t('settings.other'),
       items: [
         {
+          id: 'help',
           icon: 'help-circle',
-          label: 'ヘルプ',
+          label: t('settings.help'),
           type: 'link',
         },
         {
+          id: 'terms',
           icon: 'document-text',
-          label: '利用規約',
+          label: t('settings.termsOfService'),
           type: 'link',
         },
         {
+          id: 'privacy',
           icon: 'shield-checkmark',
-          label: 'プライバシーポリシー',
+          label: t('settings.privacyPolicy'),
           type: 'link',
         },
       ],
@@ -157,7 +171,7 @@ export default function SettingsScreen() {
   return (
     <ScreenWrapper backgroundColor={colors.gray[50]} scrollable>
       <View style={styles.header}>
-        <Text style={styles.screenTitle}>設定</Text>
+        <Text style={styles.screenTitle}>{t('settings.title')}</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -213,10 +227,57 @@ export default function SettingsScreen() {
         ))}
 
         <View style={styles.versionInfo}>
-          <Text style={styles.versionText}>バージョン 1.0.0</Text>
+          <Text style={styles.versionText}>{t('settings.version')} 1.0.0</Text>
           <Text style={styles.versionSubtext}>Expo SDK 53</Text>
         </View>
       </ScrollView>
+
+      {/* Language Selection Modal */}
+      <Modal
+        visible={languageModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setLanguageModalVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{t('settings.selectLanguage')}</Text>
+            {availableLanguages.map((language) => (
+              <TouchableOpacity
+                key={language.code}
+                style={[
+                  styles.languageItem,
+                  currentLanguage === language.code && styles.selectedLanguageItem,
+                ]}
+                onPress={() => {
+                  changeLanguage(language.code);
+                  setLanguageModalVisible(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.languageText,
+                    currentLanguage === language.code && styles.selectedLanguageText,
+                  ]}
+                >
+                  {language.name}
+                </Text>
+                {currentLanguage === language.code && (
+                  <Ionicons
+                    name="checkmark"
+                    size={24}
+                    color={colors.primary}
+                  />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </ScreenWrapper>
   );
 }
@@ -288,5 +349,44 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.gray[400],
     marginTop: spacing.xs,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xxxl,
+    maxHeight: '50%',
+  },
+  modalTitle: {
+    ...typography.h3,
+    color: colors.gray[900],
+    marginBottom: spacing.lg,
+  },
+  languageItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.sm,
+  },
+  selectedLanguageItem: {
+    backgroundColor: colors.gray[50],
+  },
+  languageText: {
+    ...typography.body,
+    color: colors.gray[700],
+  },
+  selectedLanguageText: {
+    color: colors.primary,
+    fontWeight: '600',
   },
 });

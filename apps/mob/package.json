@@ -1,5 +1,5 @@
 {
-  "name": "mob",
+  "name": "@fitness-tracker/mob",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
@@ -19,9 +19,11 @@
     "expo-barcode-scanner": "^13.0.1",
     "expo-camera": "~16.1.10",
     "expo-device": "~7.1.4",
+    "expo-localization": "^16.1.6",
     "expo-notifications": "~0.31.4",
     "expo-sharing": "^13.1.5",
     "expo-status-bar": "~2.2.3",
+    "i18n-js": "^4.5.1",
     "react": "19.0.0",
     "react-native": "0.79.5",
     "react-native-chart-kit": "^6.12.0",

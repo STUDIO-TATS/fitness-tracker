@@ -1,16 +1,21 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LineChart, BarChart } from 'react-native-chart-kit';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { colors } from '../constants/colors';
+import { icons } from '../constants/icons';
+import { theme } from '../constants/theme';
 import { commonStyles, spacing, typography, layout, borderRadius, shadows } from '../constants/styles';
 import { useAuth } from '../hooks/useAuth';
+import { useI18n } from '../hooks/useI18n';
 
 const screenWidth = Dimensions.get('window').width;
 
 export default function HomeScreen() {
   const { session } = useAuth();
+  const { t } = useI18n();
 
   // 体重推移データ
   const weightData = {
@@ -35,49 +40,72 @@ export default function HomeScreen() {
   };
 
   const chartConfig = {
-    backgroundGradientFrom: colors.white,
-    backgroundGradientTo: colors.white,
+    backgroundGradientFrom: theme.colors.background.primary,
+    backgroundGradientTo: theme.colors.background.primary,
     decimalPlaces: 1,
-    color: (opacity = 1) => colors.purple[500],
-    labelColor: (opacity = 1) => colors.gray[600],
+    color: (opacity = 1) => theme.colors.chart.primary,
+    labelColor: (opacity = 1) => theme.colors.text.secondary,
     style: {
-      borderRadius: 16,
+      borderRadius: theme.borderRadius.lg,
     },
     propsForDots: {
       r: '6',
       strokeWidth: '2',
-      stroke: colors.primary,
+      stroke: theme.colors.action.primary,
     },
   };
 
   return (
     <ScreenWrapper scrollable keyboardAvoiding={false} dismissKeyboardOnTap={false}>
       <View style={commonStyles.screenHeader}>
-        <Text style={styles.greeting}>こんにちは！</Text>
-        <Text style={styles.userName}>{session?.user?.email || 'ゲスト'}</Text>
+        <Text style={styles.greeting}>{t('home.welcome', { name: '' }).replace('さん', '！')}</Text>
+        <Text style={styles.userName}>{session?.user?.email || t('common.guest', 'ゲスト')}</Text>
       </View>
 
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Ionicons name="flag" size={32} color={colors.primary} />
-          <Text style={styles.statNumber}>3</Text>
-          <Text style={styles.statLabel}>アクティブな目標</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsScroll}>
+        <View style={styles.statsContainer}>
+          <TouchableOpacity style={styles.statCard}>
+            <LinearGradient
+              colors={theme.colors.gradient.primary}
+              style={styles.statGradient}
+            >
+              <Ionicons name={icons.navigation.goalsOutline} size={32} color={theme.colors.text.inverse} />
+              <Text style={styles.statNumber}>3</Text>
+              <Text style={styles.statLabel}>{t('goals.current')}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.statCard}>
+            <LinearGradient
+              colors={theme.colors.gradient.aurora}
+              style={styles.statGradient}
+            >
+              <Ionicons name={icons.navigation.workoutOutline} size={32} color={theme.colors.text.inverse} />
+              <Text style={styles.statNumber}>12</Text>
+              <Text style={styles.statLabel}>{t('workout.title')}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.statCard}>
+            <LinearGradient
+              colors={theme.colors.gradient.mint}
+              style={styles.statGradient}
+            >
+              <Ionicons name={icons.status.checkmarkCircleOutline} size={32} color={theme.colors.text.inverse} />
+              <Text style={styles.statNumber}>5</Text>
+              <Text style={styles.statLabel}>{t('home.todayActivity')}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
-        
-        <View style={styles.statCard}>
-          <Ionicons name="barbell" size={32} color={colors.purple[500]} />
-          <Text style={styles.statNumber}>12</Text>
-          <Text style={styles.statLabel}>今月のワークアウト</Text>
-        </View>
-      </View>
+      </ScrollView>
 
       <View style={commonStyles.section}>
         <View style={commonStyles.sectionHeader}>
-          <Text style={commonStyles.sectionTitle}>体重推移</Text>
+          <Text style={commonStyles.sectionTitle}>{t('measurement.weight')}</Text>
         </View>
         <View style={styles.chartContainer}>
           <View style={styles.chartUnitWrapper}>
-            <Text style={styles.chartUnit}>kg</Text>
+            <Text style={styles.chartUnit}>{t('measurement.kg')}</Text>
           </View>
           <LineChart
             data={weightData}
@@ -98,11 +126,11 @@ export default function HomeScreen() {
 
       <View style={commonStyles.section}>
         <View style={commonStyles.sectionHeader}>
-          <Text style={commonStyles.sectionTitle}>週間ワークアウト時間</Text>
+          <Text style={commonStyles.sectionTitle}>{t('home.weeklyProgress')}</Text>
         </View>
         <View style={styles.chartContainer}>
           <View style={styles.chartUnitWrapper}>
-            <Text style={styles.chartUnit}>分</Text>
+            <Text style={styles.chartUnit}>{t('workout.minutes')}</Text>
           </View>
           <BarChart
             data={workoutData}
@@ -110,7 +138,7 @@ export default function HomeScreen() {
             height={200}
             chartConfig={{
               ...chartConfig,
-              color: (opacity = 1) => colors.mint[500],
+              color: (opacity = 1) => theme.colors.chart.tertiary,
             }}
             style={styles.chart}
             withInnerLines={false}
@@ -121,31 +149,51 @@ export default function HomeScreen() {
 
       <View style={commonStyles.section}>
         <View style={commonStyles.sectionHeader}>
-          <Text style={commonStyles.sectionTitle}>クイックアクション</Text>
+          <Text style={commonStyles.sectionTitle}>{t('home.quickActions')}</Text>
         </View>
         
         <TouchableOpacity style={styles.actionCard}>
-          <View style={styles.actionIcon}>
-            <Ionicons name="add-circle" size={24} color={colors.white} />
-          </View>
-          <Text style={styles.actionText}>新しいワークアウトを記録</Text>
-          <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
+          <LinearGradient
+            colors={theme.colors.gradient.primary}
+            style={styles.actionIcon}
+          >
+            <Ionicons name={icons.status.addCircleOutline} size={24} color={theme.colors.text.inverse} />
+          </LinearGradient>
+          <Text style={styles.actionText}>{t('home.startWorkout')}</Text>
+          <Ionicons name={icons.navigation.forward} size={20} color={theme.colors.text.tertiary} />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.actionCard}>
-          <View style={[styles.actionIcon, { backgroundColor: colors.purple[500] }]}>
-            <Ionicons name="body" size={24} color={colors.white} />
-          </View>
-          <Text style={styles.actionText}>体重を記録</Text>
-          <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
+          <LinearGradient
+            colors={theme.colors.gradient.aurora}
+            style={styles.actionIcon}
+          >
+            <Ionicons name={icons.stats.bodyOutline} size={24} color={theme.colors.text.inverse} />
+          </LinearGradient>
+          <Text style={styles.actionText}>{t('measurement.record')}</Text>
+          <Ionicons name={icons.navigation.forward} size={20} color={theme.colors.text.tertiary} />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.actionCard}>
-          <View style={[styles.actionIcon, { backgroundColor: colors.mint[500] }]}>
-            <Ionicons name="trophy" size={24} color={colors.white} />
-          </View>
-          <Text style={styles.actionText}>目標を確認</Text>
-          <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
+          <LinearGradient
+            colors={theme.colors.gradient.mint}
+            style={styles.actionIcon}
+          >
+            <Ionicons name={icons.navigation.goalsOutline} size={24} color={theme.colors.text.inverse} />
+          </LinearGradient>
+          <Text style={styles.actionText}>{t('navigation.goals')}</Text>
+          <Ionicons name={icons.navigation.forward} size={20} color={theme.colors.text.tertiary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.actionCard}>
+          <LinearGradient
+            colors={theme.colors.gradient.secondary}
+            style={styles.actionIcon}
+          >
+            <Ionicons name={icons.scanning.qrCodeOutline} size={24} color={theme.colors.text.inverse} />
+          </LinearGradient>
+          <Text style={styles.actionText}>{t('home.scanQR')}</Text>
+          <Ionicons name={icons.navigation.forward} size={20} color={theme.colors.text.tertiary} />
         </TouchableOpacity>
       </View>
       
@@ -158,83 +206,90 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   greeting: {
     ...typography.screenTitle,
-    color: colors.gray[900],
-    marginBottom: spacing.xs,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xs,
   },
   userName: {
     ...typography.body,
-    color: colors.gray[600],
+    color: theme.colors.text.secondary,
+  },
+  statsScroll: {
+    marginBottom: theme.spacing.xl,
   },
   statsContainer: {
     flexDirection: 'row',
-    gap: spacing.lg,
+    gap: theme.spacing.md,
     paddingHorizontal: layout.screenPadding,
-    marginBottom: spacing.xl,
   },
   statCard: {
+    width: 120,
+    height: 140,
+    marginRight: theme.spacing.md,
+  },
+  statGradient: {
     flex: 1,
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.lg,
     alignItems: 'center',
-    ...shadows.md,
+    justifyContent: 'center',
+    ...theme.shadows.md,
   },
   statNumber: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.gray[900],
-    marginVertical: spacing.sm,
+    fontSize: 28,
+    fontWeight: theme.fontWeight.bold,
+    color: theme.colors.text.inverse,
+    marginVertical: theme.spacing.xs,
   },
   statLabel: {
-    ...typography.small,
-    color: colors.gray[600],
+    fontSize: theme.fontSize.xs,
+    color: theme.colors.text.inverse,
     textAlign: 'center',
+    fontWeight: theme.fontWeight.medium,
   },
   actionCard: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: theme.spacing.md,
     marginHorizontal: layout.screenPadding,
-    ...shadows.sm,
+    ...theme.shadows.sm,
   },
   actionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.primary,
+    width: 44,
+    height: 44,
+    borderRadius: theme.borderRadius.full,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
+    marginRight: theme.spacing.md,
   },
   actionText: {
     flex: 1,
     ...typography.body,
-    color: colors.gray[900],
-    fontWeight: '500',
+    color: theme.colors.text.primary,
+    fontWeight: theme.fontWeight.medium,
   },
   chartContainer: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.lg,
     marginHorizontal: layout.screenPadding,
-    ...shadows.md,
+    ...theme.shadows.md,
     position: 'relative',
   },
   chartUnitWrapper: {
     position: 'absolute',
-    top: spacing.lg,
-    right: spacing.lg,
+    top: theme.spacing.lg,
+    right: theme.spacing.lg,
     zIndex: 1,
   },
   chartUnit: {
     ...typography.small,
-    color: colors.gray[600],
-    fontWeight: '500',
+    color: theme.colors.text.secondary,
+    fontWeight: theme.fontWeight.medium,
   },
   chart: {
-    borderRadius: borderRadius.lg,
+    borderRadius: theme.borderRadius.lg,
   },
 });

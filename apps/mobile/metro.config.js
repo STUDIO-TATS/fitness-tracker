@@ -14,7 +14,12 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     };
   }
   
-  return originalResolver ? originalResolver(context, moduleName, platform) : null;
+  // If there's no original resolver, return undefined to let Metro handle it
+  if (!originalResolver) {
+    return undefined;
+  }
+  
+  return originalResolver(context, moduleName, platform);
 };
 
 module.exports = config;

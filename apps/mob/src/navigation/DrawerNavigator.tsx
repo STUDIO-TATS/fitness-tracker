@@ -15,27 +15,32 @@ import AITrainerScreen from '../screens/AITrainerScreen';
 import HelpScreen from '../screens/HelpScreen';
 import TermsScreen from '../screens/TermsScreen';
 import PrivacyScreen from '../screens/PrivacyScreen';
-import { colors } from '../constants/colors';
+import { icons } from '../constants/icons';
+import { theme } from '../constants/theme';
+import { useI18n } from '../hooks/useI18n';
 
 const Drawer = createDrawerNavigator();
 
 export default function DrawerNavigator() {
+  const { t } = useI18n();
+
   return (
     <Drawer.Navigator
       screenOptions={{
         drawerStyle: {
-          backgroundColor: colors.pink[50],
+          backgroundColor: theme.colors.background.tertiary,
         },
-        drawerActiveTintColor: colors.primary,
-        drawerInactiveTintColor: colors.gray[600],
+        drawerActiveTintColor: theme.colors.action.primary,
+        drawerInactiveTintColor: theme.colors.text.secondary,
         headerStyle: {
-          backgroundColor: colors.primary,
+          backgroundColor: theme.colors.action.primary,
           height: 100,
+          ...theme.shadows.md,
         },
-        headerTintColor: colors.white,
+        headerTintColor: theme.colors.text.inverse,
         headerTitleStyle: {
-          fontWeight: 'bold',
-          fontSize: 20,
+          fontWeight: theme.fontWeight.bold,
+          fontSize: theme.fontSize.xl,
         },
       }}
     >
@@ -44,9 +49,9 @@ export default function DrawerNavigator() {
         component={TabNavigator}
         options={{
           title: 'Fitness Tracker',
-          drawerLabel: 'ホーム',
+          drawerLabel: t('navigation.home'),
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+            <Ionicons name={icons.navigation.home} size={size} color={color} />
           ),
         }}
       />
@@ -54,9 +59,9 @@ export default function DrawerNavigator() {
         name="Profile" 
         component={ProfileScreen}
         options={{
-          title: 'プロフィール',
+          title: t('navigation.profile'),
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
+            <Ionicons name={icons.membership.person} size={size} color={color} />
           ),
         }}
       />
@@ -64,9 +69,9 @@ export default function DrawerNavigator() {
         name="QRScanner" 
         component={QRScannerScreen}
         options={{
-          title: 'QRスキャナー',
+          title: t('navigation.qrScanner'),
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="qr-code" size={size} color={color} />
+            <Ionicons name={icons.scanning.qrCode} size={size} color={color} />
           ),
         }}
       />
@@ -74,9 +79,9 @@ export default function DrawerNavigator() {
         name="Points" 
         component={PointsScreen}
         options={{
-          title: 'ポイント',
+          title: t('navigation.points'),
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="gift" size={size} color={color} />
+            <Ionicons name={icons.rewards.gift} size={size} color={color} />
           ),
         }}
       />
@@ -84,9 +89,9 @@ export default function DrawerNavigator() {
         name="ActivityLogs" 
         component={ActivityLogsScreen}
         options={{
-          title: 'アクティビティ',
+          title: t('navigation.activityLogs'),
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="list" size={size} color={color} />
+            <Ionicons name={icons.misc.list} size={size} color={color} />
           ),
         }}
       />
@@ -94,9 +99,9 @@ export default function DrawerNavigator() {
         name="Calendar" 
         component={CalendarScreen}
         options={{
-          title: 'カレンダー',
+          title: t('navigation.calendar'),
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="calendar" size={size} color={color} />
+            <Ionicons name={icons.activity.calendar} size={size} color={color} />
           ),
         }}
       />
@@ -104,9 +109,9 @@ export default function DrawerNavigator() {
         name="Facilities" 
         component={FacilitiesScreen}
         options={{
-          title: '施設',
+          title: t('navigation.facilities'),
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="business" size={size} color={color} />
+            <Ionicons name={icons.facility.business} size={size} color={color} />
           ),
         }}
       />
@@ -114,7 +119,7 @@ export default function DrawerNavigator() {
         name="FacilityDetail" 
         component={FacilityDetailScreen}
         options={{
-          title: '施設詳細',
+          title: t('facilities.details'),
           drawerItemStyle: { display: 'none' },
         }}
       />
@@ -122,9 +127,9 @@ export default function DrawerNavigator() {
         name="Membership" 
         component={MembershipScreen}
         options={{
-          title: '会員情報',
+          title: t('navigation.membership'),
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="card" size={size} color={color} />
+            <Ionicons name={icons.membership.card} size={size} color={color} />
           ),
         }}
       />
@@ -132,9 +137,9 @@ export default function DrawerNavigator() {
         name="AITrainer" 
         component={AITrainerScreen}
         options={{
-          title: 'AIトレーナー',
+          title: t('navigation.aiTrainer'),
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="fitness" size={size} color={color} />
+            <Ionicons name={icons.ai.robot} size={size} color={color} />
           ),
         }}
       />
@@ -142,9 +147,9 @@ export default function DrawerNavigator() {
         name="Settings" 
         component={SettingsScreen}
         options={{
-          title: '設定',
+          title: t('navigation.settings'),
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="settings" size={size} color={color} />
+            <Ionicons name={icons.system.settings} size={size} color={color} />
           ),
         }}
       />
@@ -152,9 +157,9 @@ export default function DrawerNavigator() {
         name="Help" 
         component={HelpScreen}
         options={{
-          title: 'ヘルプ',
+          title: t('navigation.help'),
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="help-circle" size={size} color={color} />
+            <Ionicons name={icons.system.help} size={size} color={color} />
           ),
         }}
       />
@@ -162,7 +167,7 @@ export default function DrawerNavigator() {
         name="Terms" 
         component={TermsScreen}
         options={{
-          title: '利用規約',
+          title: t('settings.termsOfService'),
           drawerItemStyle: { display: 'none' },
         }}
       />
@@ -170,7 +175,7 @@ export default function DrawerNavigator() {
         name="Privacy" 
         component={PrivacyScreen}
         options={{
-          title: 'プライバシーポリシー',
+          title: t('settings.privacyPolicy'),
           drawerItemStyle: { display: 'none' },
         }}
       />
