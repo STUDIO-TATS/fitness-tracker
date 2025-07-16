@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { colors } from '../constants/colors';
 import { useI18n } from '../hooks/useI18n';
+import { guestDataService } from '../services/guestDataService';
 
 // Development test users
 const DEV_USERS = [
@@ -29,7 +30,18 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [hasBackup, setHasBackup] = useState(false);
+  const [showRestoreOption, setShowRestoreOption] = useState(false);
   const isDev = __DEV__; // React Native's development flag
+
+  useEffect(() => {
+    checkForBackup();
+  }, []);
+
+  const checkForBackup = async () => {
+    const backup = await guestDataService.hasBackup();
+    setHasBackup(backup);
+  };
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -69,7 +81,7 @@ export default function AuthScreen() {
     setPassword(devPassword);
   };
 
-  const handleContinueAsGuest = async () => {
+  const handleContinueAsGuest = async (restoreData = false) => {
     setIsLoading(true);
     try {
       // Supabaseの匿名認証を使用
@@ -77,23 +89,32 @@ export default function AuthScreen() {
       
       if (error) throw error;
       
-      // 匿名ユーザーのプロフィールを作成/更新
       if (data.user) {
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .upsert({
-            user_id: data.user.id,
-            display_name: 'ゲスト',
-            preferences: {
-              isAnonymous: true,
-              createdAt: new Date().toISOString(),
-            },
-          }, {
-            onConflict: 'user_id',
-          });
-          
-        if (profileError) {
-          console.error('Error creating guest profile:', profileError);
+        if (restoreData && hasBackup) {
+          // バックアップデータを復元
+          const backup = await guestDataService.getGuestBackup();
+          if (backup) {
+            await guestDataService.restoreGuestData(data.user.id, backup);
+            Alert.alert('成功', '以前のゲストデータを復元しました！');
+          }
+        } else {
+          // 新しいゲストユーザーのプロフィールを作成
+          const { error: profileError } = await supabase
+            .from('user_profiles')
+            .upsert({
+              user_id: data.user.id,
+              display_name: 'ゲスト',
+              preferences: {
+                isAnonymous: true,
+                createdAt: new Date().toISOString(),
+              },
+            }, {
+              onConflict: 'user_id',
+            });
+            
+          if (profileError) {
+            console.error('Error creating guest profile:', profileError);
+          }
         }
       }
     } catch (error: any) {
@@ -102,6 +123,17 @@ export default function AuthScreen() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRestoreBackup = () => {
+    Alert.alert(
+      'データ復元',
+      '以前のゲストデータが見つかりました。復元しますか？',
+      [
+        { text: '新しく開始', onPress: () => handleContinueAsGuest(false) },
+        { text: '復元して開始', onPress: () => handleContinueAsGuest(true) },
+      ]
+    );
   };
 
   return (
@@ -170,13 +202,18 @@ export default function AuthScreen() {
 
         <TouchableOpacity
           style={[styles.guestButton, isLoading && styles.buttonDisabled]}
-          onPress={handleContinueAsGuest}
+          onPress={hasBackup ? handleRestoreBackup : () => handleContinueAsGuest(false)}
           disabled={isLoading}
         >
           <Text style={styles.guestButtonText}>
             {isLoading ? '処理中...' : 'ゲストとして続ける'}
           </Text>
-          <Text style={styles.guestButtonSubtext}>登録不要・データはSupabaseに保存</Text>
+          <Text style={styles.guestButtonSubtext}>
+            {hasBackup 
+              ? '登録不要・以前のデータを復元可能' 
+              : '登録不要・データはSupabaseに保存'
+            }
+          </Text>
         </TouchableOpacity>
 
         {/* Development only: Test user selection */}

@@ -9,6 +9,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useI18n } from '../hooks/useI18n';
 import { spacing, typography, layout, borderRadius, shadows } from '../constants/styles';
 import { TextRefreshControl } from '../components/TextRefreshControl';
+import { guestDataService } from '../services/guestDataService';
 
 interface ProfileData {
   display_name: string;
@@ -100,20 +101,47 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = async () => {
-    Alert.alert(
-      'ログアウト',
-      'ログアウトしますか？',
-      [
-        { text: 'キャンセル', style: 'cancel' },
-        {
-          text: 'ログアウト',
-          style: 'destructive',
-          onPress: async () => {
-            await supabase.auth.signOut();
+    if (isGuest) {
+      // ゲストユーザーの場合は特別な警告
+      Alert.alert(
+        'ゲストモード終了',
+        '⚠️ 重要なお知らせ\n\nゲストモードを終了すると、現在のデータにアクセスできなくなります。\n\nデータはローカルにバックアップされ、後で復元できますが、アカウント作成を強くおすすめします。',
+        [
+          { text: 'キャンセル', style: 'cancel' },
+          {
+            text: 'アカウント作成',
+            style: 'default',
+            onPress: () => setShowAccountCreation(true),
           },
-        },
-      ]
-    );
+          {
+            text: '終了してバックアップ',
+            style: 'destructive',
+            onPress: async () => {
+              if (session?.user?.id) {
+                await guestDataService.backupGuestData(session.user.id);
+              }
+              await supabase.auth.signOut();
+            },
+          },
+        ]
+      );
+    } else {
+      // 正式ユーザーの場合は通常のログアウト
+      Alert.alert(
+        'ログアウト',
+        'ログアウトしますか？',
+        [
+          { text: 'キャンセル', style: 'cancel' },
+          {
+            text: 'ログアウト',
+            style: 'destructive',
+            onPress: async () => {
+              await supabase.auth.signOut();
+            },
+          },
+        ]
+      );
+    }
   };
 
   const handleSave = async () => {
