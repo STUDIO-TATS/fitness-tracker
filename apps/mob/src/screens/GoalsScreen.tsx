@@ -10,10 +10,14 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { colors } from '../constants/colors';
+import { icons } from '../constants/icons';
+import { theme } from '../constants/theme';
+import { useI18n } from '../hooks/useI18n';
 import { commonStyles, spacing, typography, layout, borderRadius, shadows } from '../constants/styles';
 
 interface Goal {
@@ -27,6 +31,7 @@ interface Goal {
 }
 
 export default function GoalsScreen() {
+  const { t } = useI18n();
   const viewShotRef = useRef<ViewShot>(null);
   const [goals, setGoals] = useState<Goal[]>([
     {
@@ -110,14 +115,19 @@ export default function GoalsScreen() {
   };
 
   return (
-    <ScreenWrapper backgroundColor={colors.purple[50]}>
+    <ScreenWrapper backgroundColor={theme.colors.background.tertiary}>
       <View style={[commonStyles.screenHeader, styles.header]}>
-        <Text style={[commonStyles.screenTitle, { color: colors.purple[700] }]}>目標</Text>
+        <Text style={[commonStyles.screenTitle, { color: theme.colors.text.primary }]}>{t('navigation.goals')}</Text>
         <TouchableOpacity
-          style={commonStyles.addButton}
+          style={styles.addButton}
           onPress={() => setModalVisible(true)}
         >
-          <Ionicons name="add" size={24} color={colors.white} />
+          <LinearGradient
+            colors={theme.colors.gradient.aurora}
+            style={styles.addButtonGradient}
+          >
+            <Ionicons name={icons.status.add} size={24} color={theme.colors.text.inverse} />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
@@ -237,15 +247,21 @@ const styles = StyleSheet.create({
     color: colors.purple[700],
   },
   addButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.purple[500],
+    width: 44,
+    height: 44,
+    borderRadius: theme.borderRadius.full,
+    overflow: 'hidden',
+  },
+  addButtonGradient: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
   listContent: {
     padding: 20,
+    paddingTop: spacing.lg,
+    paddingBottom: 100,
   },
   goalCard: {
     backgroundColor: colors.white,

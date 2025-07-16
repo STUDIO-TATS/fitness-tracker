@@ -176,6 +176,13 @@ export const fontWeight = {
   bold: '700' as const,
 };
 
+// フォントファミリー
+export const fontFamily = {
+  regular: 'NotoSansJP-Regular',
+  medium: 'NotoSansJP-Medium',
+  bold: 'NotoSansJP-Bold',
+};
+
 // アニメーション設定
 export const animation = {
   duration: {
@@ -200,6 +207,7 @@ export const theme = {
   borderRadius,
   fontSize,
   fontWeight,
+  fontFamily,
   animation,
 };
 

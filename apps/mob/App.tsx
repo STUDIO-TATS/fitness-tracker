@@ -7,12 +7,14 @@ import DrawerNavigator from './src/navigation/DrawerNavigator';
 import AuthScreen from './src/screens/AuthScreen';
 import LoadingScreen from './src/screens/LoadingScreen';
 import { useAuth } from './src/hooks/useAuth';
+import { useFonts } from './src/hooks/useFonts';
 import { colors } from './src/constants/colors';
 
 export default function App() {
   const { session, isLoading } = useAuth();
+  const fontsLoaded = useFonts();
 
-  if (isLoading) {
+  if (isLoading || !fontsLoaded) {
     return <LoadingScreen />;
   }
 

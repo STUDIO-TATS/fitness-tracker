@@ -9,8 +9,12 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { colors } from '../constants/colors';
+import { icons } from '../constants/icons';
+import { theme } from '../constants/theme';
+import { useI18n } from '../hooks/useI18n';
 import { commonStyles, spacing, typography, layout, borderRadius, shadows } from '../constants/styles';
 
 interface Exercise {
@@ -31,6 +35,7 @@ interface Workout {
 }
 
 export default function WorkoutScreen() {
+  const { t } = useI18n();
   const [workouts] = useState<Workout[]>([
     {
       id: '1',
@@ -74,12 +79,12 @@ export default function WorkoutScreen() {
         </View>
         <View style={styles.workoutStats}>
           <View style={styles.statItem}>
-            <Ionicons name="time-outline" size={16} color={colors.gray[500]} />
+            <Ionicons name={icons.activity.time} size={16} color={theme.colors.text.secondary} />
             <Text style={styles.statText}>{item.duration}</Text>
           </View>
           {item.calories && (
             <View style={styles.statItem}>
-              <Ionicons name="flame-outline" size={16} color={colors.pink[500]} />
+              <Ionicons name={icons.misc.flameOutline} size={16} color={theme.colors.action.secondary} />
               <Text style={styles.statText}>{item.calories} cal</Text>
             </View>
           )}
@@ -103,22 +108,39 @@ export default function WorkoutScreen() {
   );
 
   return (
-    <ScreenWrapper backgroundColor={colors.pink[50]}>
+    <ScreenWrapper backgroundColor={theme.colors.background.tertiary}>
       <View style={styles.header}>
-        <Text style={styles.screenTitle}>ワークアウト</Text>
+        <Text style={styles.screenTitle}>{t('navigation.workout')}</Text>
         <TouchableOpacity style={styles.addButton}>
-          <Ionicons name="add" size={24} color={colors.white} />
+          <LinearGradient
+            colors={theme.colors.gradient.secondary}
+            style={styles.addButtonGradient}
+          >
+            <Ionicons name={icons.status.add} size={24} color={theme.colors.text.inverse} />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
       <View style={styles.quickStats}>
         <View style={styles.quickStatCard}>
-          <Text style={styles.quickStatValue}>12</Text>
-          <Text style={styles.quickStatLabel}>今月のワークアウト</Text>
+          <LinearGradient
+            colors={theme.colors.gradient.secondary}
+            style={styles.quickStatGradient}
+          >
+            <Ionicons name={icons.navigation.workoutOutline} size={24} color={theme.colors.text.inverse} />
+            <Text style={styles.quickStatValue}>12</Text>
+            <Text style={styles.quickStatLabel}>{t('workout.monthlyCount', '今月のワークアウト')}</Text>
+          </LinearGradient>
         </View>
         <View style={styles.quickStatCard}>
-          <Text style={styles.quickStatValue}>5.5</Text>
-          <Text style={styles.quickStatLabel}>週平均時間</Text>
+          <LinearGradient
+            colors={theme.colors.gradient.aurora}
+            style={styles.quickStatGradient}
+          >
+            <Ionicons name={icons.activity.time} size={24} color={theme.colors.text.inverse} />
+            <Text style={styles.quickStatValue}>5.5</Text>
+            <Text style={styles.quickStatLabel}>{t('workout.weeklyAverage', '週平均時間')}</Text>
+          </LinearGradient>
         </View>
       </View>
 
@@ -198,11 +220,19 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     ...commonStyles.screenTitle,
-    color: colors.pink[700],
+    color: theme.colors.text.primary,
   },
   addButton: {
-    ...commonStyles.addButton,
-    backgroundColor: colors.primary,
+    width: 44,
+    height: 44,
+    borderRadius: theme.borderRadius.full,
+    overflow: 'hidden',
+  },
+  addButtonGradient: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   quickStats: {
     flexDirection: 'row',
@@ -211,27 +241,33 @@ const styles = StyleSheet.create({
   },
   quickStatCard: {
     flex: 1,
-    ...commonStyles.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    alignItems: 'center',
+    borderRadius: theme.borderRadius.xl,
+    overflow: 'hidden',
     marginBottom: 0,
-    ...shadows.sm,
+    ...theme.shadows.md,
+  },
+  quickStatGradient: {
+    padding: theme.spacing.lg,
+    alignItems: 'center',
   },
   quickStatValue: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.primary,
+    fontWeight: theme.fontWeight.bold,
+    color: theme.colors.text.inverse,
+    marginVertical: theme.spacing.sm,
+    fontFamily: theme.fontFamily.bold,
   },
   quickStatLabel: {
     ...typography.caption,
-    color: colors.gray[600],
-    marginTop: spacing.xs,
+    color: theme.colors.text.inverse,
+    marginTop: theme.spacing.xs,
     textAlign: 'center',
+    fontWeight: theme.fontWeight.medium,
   },
   listContent: {
     paddingHorizontal: layout.screenPadding,
-    paddingTop: 0,
+    paddingTop: spacing.lg,
+    paddingBottom: 100,
   },
   workoutCard: {
     ...commonStyles.card,

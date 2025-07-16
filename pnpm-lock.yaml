@@ -23,6 +23,9 @@ importers:
 
   apps/mob:
     dependencies:
+      '@expo-google-fonts/noto-sans-jp':
+        specifier: ^0.4.1
+        version: 0.4.1
       '@expo/vector-icons':
         specifier: ^14.1.0
         version: 14.1.0(expo-font@13.3.2(expo@53.0.19(@babel/core@7.28.0)(babel-plugin-react-compiler@0.0.0-experimental-592953e-20240517)(graphql@15.8.0)(react-native@0.79.5(@babel/core@7.28.0)(@react-native-community/cli@14.1.0(typescript@5.8.3))(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))(react@19.0.0))(react-native@0.79.5(@babel/core@7.28.0)(@react-native-community/cli@14.1.0(typescript@5.8.3))(@types/react@19.0.14)(react@19.0.0))(react@19.0.0)
@@ -53,6 +56,9 @@ importers:
       expo-device:
         specifier: ~7.1.4
         version: 7.1.4(expo@53.0.19(@babel/core@7.28.0)(babel-plugin-react-compiler@0.0.0-experimental-592953e-20240517)(graphql@15.8.0)(react-native@0.79.5(@babel/core@7.28.0)(@react-native-community/cli@14.1.0(typescript@5.8.3))(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))
+      expo-font:
+        specifier: ~13.3.2
+        version: 13.3.2(expo@53.0.19(@babel/core@7.28.0)(babel-plugin-react-compiler@0.0.0-experimental-592953e-20240517)(graphql@15.8.0)(react-native@0.79.5(@babel/core@7.28.0)(@react-native-community/cli@14.1.0(typescript@5.8.3))(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))(react@19.0.0)
       expo-localization:
         specifier: ^16.1.6
         version: 16.1.6(expo@53.0.19(@babel/core@7.28.0)(babel-plugin-react-compiler@0.0.0-experimental-592953e-20240517)(graphql@15.8.0)(react-native@0.79.5(@babel/core@7.28.0)(@react-native-community/cli@14.1.0(typescript@5.8.3))(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))(react@19.0.0)
@@ -1321,6 +1327,9 @@ packages:
   '@eslint/plugin-kit@0.3.3':
     resolution: {integrity: sha512-1+WqvgNMhmlAambTvT3KPtCl/Ibr68VldY2XY40SL1CE0ZXiakFR/cbTspaF5HsnpDMvcYYoJHfl4980NBjGag==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@expo-google-fonts/noto-sans-jp@0.4.1':
+    resolution: {integrity: sha512-3kJeCuntZWvWdxmOBC1oNW7qccl4d5ec8mIB5TYNFARjrds1mmA3ewamRMdFD4KLVSJwIyjP1D5R5elP/meJGA==}
 
   '@expo/cli@0.24.20':
     resolution: {integrity: sha512-uF1pOVcd+xizNtVTuZqNGzy7I6IJon5YMmQidsURds1Ww96AFDxrR/NEACqeATNAmY60m8wy1VZZpSg5zLNkpw==}
@@ -7040,6 +7049,8 @@ snapshots:
     dependencies:
       '@eslint/core': 0.15.1
       levn: 0.4.1
+
+  '@expo-google-fonts/noto-sans-jp@0.4.1': {}
 
   '@expo/cli@0.24.20(graphql@15.8.0)':
     dependencies:

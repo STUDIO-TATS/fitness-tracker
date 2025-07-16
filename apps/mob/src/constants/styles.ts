@@ -1,4 +1,5 @@
 import { colors } from './colors';
+import { theme } from './theme';
 
 // Typography
 export const typography = {
@@ -7,36 +8,42 @@ export const typography = {
     fontSize: 32,
     fontWeight: 'bold' as const,
     lineHeight: 40,
+    fontFamily: theme.fontFamily.bold,
   },
   // Section titles
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold' as const,
     lineHeight: 28,
+    fontFamily: theme.fontFamily.bold,
   },
   // Card titles
   cardTitle: {
     fontSize: 18,
     fontWeight: '600' as const,
     lineHeight: 24,
+    fontFamily: theme.fontFamily.medium,
   },
   // Body text
   body: {
     fontSize: 16,
     fontWeight: 'normal' as const,
-    lineHeight: 22,
+    lineHeight: 24,
+    fontFamily: theme.fontFamily.regular,
   },
   // Small text
   small: {
     fontSize: 14,
     fontWeight: 'normal' as const,
     lineHeight: 20,
+    fontFamily: theme.fontFamily.regular,
   },
   // Caption text
   caption: {
     fontSize: 12,
     fontWeight: 'normal' as const,
     lineHeight: 16,
+    fontFamily: theme.fontFamily.regular,
   },
 };
 

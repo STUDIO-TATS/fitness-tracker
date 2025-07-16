@@ -43,7 +43,8 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
       showsVerticalScrollIndicator={true}
       style={{ flex: 1 }}
       contentContainerStyle={{ 
-        paddingBottom: contentPadding,
+        paddingTop: contentPadding,
+        paddingBottom: contentPadding + 100,
       }}
       keyboardShouldPersistTaps="handled"
       scrollEnabled={true}

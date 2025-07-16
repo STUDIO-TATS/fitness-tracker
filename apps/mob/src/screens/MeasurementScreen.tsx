@@ -9,8 +9,12 @@ import {
   Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { colors } from '../constants/colors';
+import { icons } from '../constants/icons';
+import { theme } from '../constants/theme';
+import { useI18n } from '../hooks/useI18n';
 import { commonStyles, spacing, typography, layout, borderRadius, shadows } from '../constants/styles';
 
 interface Measurement {
@@ -22,6 +26,7 @@ interface Measurement {
 }
 
 export default function MeasurementScreen() {
+  const { t } = useI18n();
   const [measurements] = useState<Measurement[]>([
     { id: '1', date: '2024-01-15', weight: 70.5, bodyFat: 22.3, muscle: 35.2 },
     { id: '2', date: '2024-01-08', weight: 71.2, bodyFat: 22.8, muscle: 35.0 },
@@ -48,15 +53,20 @@ export default function MeasurementScreen() {
   };
 
   return (
-    <ScreenWrapper backgroundColor={colors.mint[50]}>
+    <ScreenWrapper backgroundColor={theme.colors.background.tertiary}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.screenTitle}>体測定</Text>
+          <Text style={styles.screenTitle}>{t('navigation.measurement')}</Text>
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => setModalVisible(true)}
           >
-            <Ionicons name="add" size={24} color={colors.white} />
+            <LinearGradient
+              colors={theme.colors.gradient.mint}
+              style={styles.addButtonGradient}
+            >
+              <Ionicons name={icons.status.add} size={24} color={theme.colors.text.inverse} />
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
@@ -85,16 +95,26 @@ export default function MeasurementScreen() {
             <View style={styles.subStats}>
               {latestMeasurement.bodyFat && (
                 <View style={styles.subStat}>
-                  <Ionicons name="water" size={24} color={colors.purple[500]} />
-                  <Text style={styles.subStatLabel}>体脂肪率</Text>
-                  <Text style={styles.subStatValue}>{latestMeasurement.bodyFat}%</Text>
+                  <LinearGradient
+                    colors={theme.colors.gradient.aurora}
+                    style={styles.subStatGradient}
+                  >
+                    <Ionicons name={icons.facility.pool} size={24} color={theme.colors.text.inverse} />
+                    <Text style={styles.subStatLabel}>{t('measurement.bodyFat')}</Text>
+                    <Text style={styles.subStatValue}>{latestMeasurement.bodyFat}%</Text>
+                  </LinearGradient>
                 </View>
               )}
               {latestMeasurement.muscle && (
                 <View style={styles.subStat}>
-                  <Ionicons name="fitness" size={24} color={colors.primary} />
-                  <Text style={styles.subStatLabel}>筋肉量</Text>
-                  <Text style={styles.subStatValue}>{latestMeasurement.muscle} kg</Text>
+                  <LinearGradient
+                    colors={theme.colors.gradient.mint}
+                    style={styles.subStatGradient}
+                  >
+                    <Ionicons name={icons.navigation.workoutOutline} size={24} color={theme.colors.text.inverse} />
+                    <Text style={styles.subStatLabel}>{t('measurement.muscleMass')}</Text>
+                    <Text style={styles.subStatValue}>{latestMeasurement.muscle} kg</Text>
+                  </LinearGradient>
                 </View>
               )}
             </View>
@@ -199,11 +219,19 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     ...commonStyles.screenTitle,
-    color: colors.mint[700],
+    color: theme.colors.text.primary,
   },
   addButton: {
-    ...commonStyles.addButton,
-    backgroundColor: colors.mint[500],
+    width: 44,
+    height: 44,
+    borderRadius: theme.borderRadius.full,
+    overflow: 'hidden',
+  },
+  addButtonGradient: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   currentStats: {
     paddingHorizontal: layout.screenPadding,
@@ -242,36 +270,44 @@ const styles = StyleSheet.create({
   },
   subStat: {
     flex: 1,
-    ...commonStyles.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    alignItems: 'center',
+    borderRadius: theme.borderRadius.xl,
+    overflow: 'hidden',
     marginBottom: 0,
-    ...shadows.sm,
+    ...theme.shadows.md,
+  },
+  subStatGradient: {
+    padding: theme.spacing.lg,
+    alignItems: 'center',
   },
   subStatLabel: {
     ...typography.small,
-    color: colors.gray[600],
-    marginTop: spacing.sm,
-    marginBottom: spacing.xs,
+    color: theme.colors.text.inverse,
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
+    fontWeight: theme.fontWeight.medium,
   },
   subStatValue: {
     ...typography.cardTitle,
-    fontWeight: 'bold',
-    color: colors.gray[900],
+    fontWeight: theme.fontWeight.bold,
+    color: theme.colors.text.inverse,
+    fontFamily: theme.fontFamily.bold,
   },
   historySection: {
     ...commonStyles.listContainer,
     ...commonStyles.section,
+    marginTop: spacing.xl,
   },
   sectionTitle: {
     ...commonStyles.sectionTitle,
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.xs,
   },
   historyItem: {
     ...commonStyles.listItem,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    padding: spacing.xl,
   },
   historyDate: {
     ...typography.body,
