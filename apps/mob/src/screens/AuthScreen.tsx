@@ -92,10 +92,34 @@ export default function AuthScreen() {
       if (data.user) {
         if (restoreData && hasBackup) {
           // バックアップデータを復元
-          const backup = await guestDataService.getGuestBackup();
-          if (backup) {
-            await guestDataService.restoreGuestData(data.user.id, backup);
-            Alert.alert('成功', '以前のゲストデータを復元しました！');
+          try {
+            const backup = await guestDataService.getGuestBackup();
+            if (backup) {
+              await guestDataService.restoreGuestData(data.user.id, backup);
+              Alert.alert('成功', '以前のゲストデータを復元しました！');
+            }
+          } catch (restoreError: any) {
+            console.error('Restore error details:', restoreError);
+            Alert.alert(
+              '復元エラー', 
+              `データの復元に失敗しました。\n\nエラー: ${restoreError.message || restoreError.code || '不明なエラー'}\n\n新しいゲストとして開始します。`
+            );
+            // 復元失敗時は新しいプロフィールを作成
+            const { error: profileError } = await supabase
+              .from('user_profiles')
+              .upsert({
+                user_id: data.user.id,
+                display_name: 'ゲスト',
+                preferences: {
+                  isAnonymous: true,
+                  createdAt: new Date().toISOString(),
+                },
+              }, {
+                onConflict: 'user_id',
+              });
+            if (profileError) {
+              console.error('Error creating fallback profile:', profileError);
+            }
           }
         } else {
           // 新しいゲストユーザーのプロフィールを作成

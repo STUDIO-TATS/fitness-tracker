@@ -90,27 +90,47 @@ class GuestDataService {
 
   // バックアップデータを新しいゲストユーザーに復元
   async restoreGuestData(newUserId: string, backupData: GuestBackupData): Promise<void> {
+    console.log('Starting data restoration for user:', newUserId);
+    console.log('Backup data:', { 
+      workouts: backupData.workouts.length, 
+      measurements: backupData.measurements.length, 
+      goals: backupData.goals.length 
+    });
+    
     try {
-      // プロフィールを復元
+      // プロフィールを復元（update のみ、既存のプロフィールを更新）
       const { error: profileError } = await supabase
         .from('user_profiles')
-        .upsert({
-          ...backupData.profile,
-          user_id: newUserId,
+        .update({
+          display_name: backupData.profile.display_name || 'ゲスト',
+          phone: backupData.profile.phone,
+          date_of_birth: backupData.profile.date_of_birth,
+          gender: backupData.profile.gender,
+          avatar_url: backupData.profile.avatar_url,
+          emergency_contact: backupData.profile.emergency_contact,
+          preferences: {
+            ...backupData.profile.preferences,
+            isAnonymous: true,
+            restoredAt: new Date().toISOString(),
+          },
           updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id',
-        });
+        })
+        .eq('user_id', newUserId);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile update error:', profileError);
+        throw profileError;
+      }
 
       // ワークアウトデータを復元
       for (const workout of backupData.workouts) {
+        // IDプロパティを削除して新しいレコードとして挿入
+        const { id, workout_exercises, ...workoutData } = workout;
+        
         const { data: newWorkout, error: workoutError } = await supabase
           .from('workouts')
           .insert({
-            ...workout,
-            id: undefined, // 新しいIDを生成
+            ...workoutData,
             user_id: newUserId,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -118,64 +138,82 @@ class GuestDataService {
           .select()
           .single();
 
-        if (workoutError) throw workoutError;
+        if (workoutError) {
+          console.error('Workout insert error:', workoutError);
+          throw workoutError;
+        }
 
         // ワークアウトエクササイズも復元
-        if (workout.workout_exercises && workout.workout_exercises.length > 0) {
-          const exercises = workout.workout_exercises.map((exercise: any) => ({
-            ...exercise,
-            id: undefined,
-            workout_id: newWorkout.id,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }));
+        if (workout_exercises && workout_exercises.length > 0) {
+          const exercises = workout_exercises.map((exercise: any) => {
+            const { id: exerciseId, ...exerciseData } = exercise;
+            return {
+              ...exerciseData,
+              workout_id: newWorkout.id,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+          });
 
           const { error: exerciseError } = await supabase
             .from('workout_exercises')
             .insert(exercises);
 
-          if (exerciseError) throw exerciseError;
+          if (exerciseError) {
+            console.error('Exercise insert error:', exerciseError);
+            throw exerciseError;
+          }
         }
       }
 
       // 測定データを復元
       if (backupData.measurements.length > 0) {
-        const measurementsToRestore = backupData.measurements.map(measurement => ({
-          ...measurement,
-          id: undefined,
-          user_id: newUserId,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }));
+        const measurementsToRestore = backupData.measurements.map(measurement => {
+          const { id, ...measurementData } = measurement;
+          return {
+            ...measurementData,
+            user_id: newUserId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+        });
 
         const { error: measurementError } = await supabase
           .from('measurements')
           .insert(measurementsToRestore);
 
-        if (measurementError) throw measurementError;
+        if (measurementError) {
+          console.error('Measurement insert error:', measurementError);
+          throw measurementError;
+        }
       }
 
       // 目標データを復元
       if (backupData.goals.length > 0) {
-        const goalsToRestore = backupData.goals.map(goal => ({
-          ...goal,
-          id: undefined,
-          user_id: newUserId,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }));
+        const goalsToRestore = backupData.goals.map(goal => {
+          const { id, ...goalData } = goal;
+          return {
+            ...goalData,
+            user_id: newUserId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+        });
 
         const { error: goalError } = await supabase
           .from('goals')
           .insert(goalsToRestore);
 
-        if (goalError) throw goalError;
+        if (goalError) {
+          console.error('Goal insert error:', goalError);
+          throw goalError;
+        }
       }
 
       // 新しいユーザーIDでバックアップを更新
       await this.backupGuestData(newUserId);
       
-      console.log('Guest data restored successfully');
+      console.log('Guest data restored successfully for user:', newUserId);
     } catch (error) {
       console.error('Error restoring guest data:', error);
       throw error;
