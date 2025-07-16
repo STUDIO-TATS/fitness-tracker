@@ -5,26 +5,25 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
-  Image,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { DrawerNavigationProp } from "@react-navigation/drawer";
+import * as Location from 'expo-location';
 import { RootDrawerParamList } from "../types/navigation";
+import { KeyboardAvoidingWrapper } from "../components/KeyboardAvoidingWrapper";
 import { ScreenWrapper } from "../components/ScreenWrapper";
 import { colors } from "../constants/colors";
 import { icons } from "../constants/icons";
 import { theme } from "../constants/theme";
 import { useI18n } from "../hooks/useI18n";
 import {
-  commonStyles,
   spacing,
   typography,
   layout,
-  borderRadius,
-  shadows,
 } from "../constants/styles";
 import { supabase } from "../lib/supabase";
 import type { FacilityWithCompany } from "../types/database";
@@ -35,37 +34,107 @@ type FacilitiesScreenNavigationProp = DrawerNavigationProp<
   "Facilities"
 >;
 
+interface FacilityWithDistance extends FacilityWithCompany {
+  distance?: number;
+}
+
 export default function FacilitiesScreen() {
   const navigation = useNavigation<FacilitiesScreenNavigationProp>();
   const { t } = useI18n();
-  const [facilities, setFacilities] = useState<FacilityWithCompany[]>([]);
+  const [facilities, setFacilities] = useState<FacilityWithDistance[]>([]);
   const [loading, setLoading] = useState(true);
+  const [location, setLocation] = useState<Location.LocationObject | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [locationEnabled, setLocationEnabled] = useState(false);
+
+  useEffect(() => {
+    requestLocationPermission();
+  }, []);
 
   useEffect(() => {
     fetchFacilities();
-  }, []);
+  }, [location]);
+
+  const requestLocationPermission = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setLocationError('位置情報の権限が許可されていません');
+        setLocationEnabled(false);
+        return;
+      }
+
+      setLocationEnabled(true);
+      const currentLocation = await Location.getCurrentPositionAsync({});
+      setLocation(currentLocation);
+    } catch (error) {
+      console.error('Location permission error:', error);
+      setLocationError('位置情報の取得に失敗しました');
+      setLocationEnabled(false);
+    }
+  };
+
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+    return distance;
+  };
+
 
   const fetchFacilities = async () => {
     try {
       const { data, error } = await supabase
-        .from('facilities')
-        .select(`
+        .from("facilities")
+        .select(
+          `
           *,
           companies (
             name,
             code
           )
-        `)
-        .eq('is_active', true)
-        .order('name');
+        `
+        )
+        .eq("is_active", true)
+        .order("name");
 
       if (error) {
         throw error;
       }
 
       if (data) {
-        console.log("Facilities data loaded:", data.length);
-        setFacilities(data as FacilityWithCompany[]);
+        let facilitiesWithDistance = data as FacilityWithDistance[];
+        
+        // Calculate distances if location is available
+        if (location && locationEnabled) {
+          facilitiesWithDistance = facilitiesWithDistance.map(facility => {
+            if (facility.latitude && facility.longitude) {
+              const distance = calculateDistance(
+                location.coords.latitude,
+                location.coords.longitude,
+                facility.latitude,
+                facility.longitude
+              );
+              return { ...facility, distance };
+            }
+            return facility;
+          });
+          
+          // Sort by distance
+          facilitiesWithDistance.sort((a, b) => {
+            if (a.distance === undefined) return 1;
+            if (b.distance === undefined) return -1;
+            return a.distance - b.distance;
+          });
+        }
+        
+        setFacilities(facilitiesWithDistance);
       } else {
         setFacilities([]);
       }
@@ -131,7 +200,7 @@ export default function FacilitiesScreen() {
       .slice(0, 3);
   };
 
-  const renderFacilityItem = ({ item }: { item: FacilityWithCompany }) => (
+  const renderFacilityItem = ({ item }: { item: FacilityWithDistance }) => (
     <TouchableOpacity
       style={styles.facilityCard}
       onPress={() => navigation.navigate("FacilityDetail", { facility: item })}
@@ -149,9 +218,21 @@ export default function FacilitiesScreen() {
         </LinearGradient>
         <View style={styles.facilityInfo}>
           <Text style={styles.facilityName}>{item.name}</Text>
-          <Text style={styles.facilityType}>
-            {getFacilityTypeLabel(item.facility_type)}
-          </Text>
+          <View style={styles.facilitySubInfo}>
+            <Text style={styles.facilityType}>
+              {getFacilityTypeLabel(item.facility_type)}
+            </Text>
+            {item.distance !== undefined && (
+              <>
+                <Text style={styles.distanceDot}>•</Text>
+                <Text style={styles.distanceText}>
+                  {item.distance < 1 
+                    ? `${Math.round(item.distance * 1000)}m` 
+                    : `${item.distance.toFixed(1)}km`}
+                </Text>
+              </>
+            )}
+          </View>
           <Text style={styles.companyName}>{item.companies?.name}</Text>
         </View>
         <Ionicons
@@ -229,16 +310,19 @@ export default function FacilitiesScreen() {
 
   if (loading) {
     return (
-      <ScreenWrapper backgroundColor={theme.colors.background.tertiary}>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>{t("common.loading")}</Text>
-        </View>
-      </ScreenWrapper>
+      <KeyboardAvoidingWrapper>
+        <ScreenWrapper backgroundColor={theme.colors.background.tertiary} keyboardAvoiding={false} dismissKeyboardOnTap={false}>
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>{t("common.loading")}</Text>
+          </View>
+        </ScreenWrapper>
+      </KeyboardAvoidingWrapper>
     );
   }
 
   return (
-    <ScreenWrapper backgroundColor={theme.colors.background.tertiary}>
+    <KeyboardAvoidingWrapper>
+      <ScreenWrapper backgroundColor={theme.colors.background.tertiary} keyboardAvoiding={false} dismissKeyboardOnTap={false}>
       <FlatList
         data={facilities}
         renderItem={renderFacilityItem}
@@ -247,6 +331,34 @@ export default function FacilitiesScreen() {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              {locationEnabled ? (
+                <View style={styles.locationStatus}>
+                  <Ionicons
+                    name="location"
+                    size={16}
+                    color={theme.colors.text.success}
+                  />
+                  <Text style={styles.locationStatusText}>
+                    近い順で表示中
+                  </Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.locationButton}
+                  onPress={requestLocationPermission}
+                >
+                  <Ionicons
+                    name="location-outline"
+                    size={16}
+                    color={theme.colors.text.secondary}
+                  />
+                  <Text style={styles.locationButtonText}>
+                    位置情報をONにする
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
             <TouchableOpacity style={styles.filterButton}>
               <LinearGradient
                 colors={theme.colors.gradient.primary}
@@ -283,18 +395,46 @@ export default function FacilitiesScreen() {
           </View>
         }
       />
-    </ScreenWrapper>
+      </ScreenWrapper>
+    </KeyboardAvoidingWrapper>
   );
 }
 
 const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "space-between",
     alignItems: "center",
     padding: layout.screenPadding,
     paddingTop: theme.spacing.lg,
     paddingBottom: theme.spacing.md,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  locationStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  locationStatusText: {
+    ...typography.small,
+    color: theme.colors.text.success,
+    fontWeight: theme.fontWeight.medium,
+  },
+  locationButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.borderRadius.md,
+    alignSelf: "flex-start",
+  },
+  locationButtonText: {
+    ...typography.small,
+    color: theme.colors.text.secondary,
   },
   screenTitle: {
     ...typography.screenTitle,
@@ -348,10 +488,24 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.xs,
   },
+  facilitySubInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
   facilityType: {
     ...typography.small,
     color: theme.colors.action.primary,
     fontWeight: theme.fontWeight.semibold,
+  },
+  distanceDot: {
+    ...typography.small,
+    color: theme.colors.text.tertiary,
+  },
+  distanceText: {
+    ...typography.small,
+    color: theme.colors.text.secondary,
+    fontWeight: theme.fontWeight.medium,
   },
   companyName: {
     ...typography.caption,

@@ -1,200 +1,105 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Linking,
+  ActivityIndicator,
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { DrawerScreenProps } from "@react-navigation/drawer";
 import { RootDrawerParamList } from "../types/navigation";
+import { KeyboardAvoidingWrapper } from "../components/KeyboardAvoidingWrapper";
 import { ScreenWrapper } from "../components/ScreenWrapper";
 import { colors } from "../constants/colors";
 import {
-  commonStyles,
   spacing,
   typography,
   layout,
   borderRadius,
   shadows,
 } from "../constants/styles";
+import { supabase } from "../lib/supabase";
+import { useI18n } from "../hooks/useI18n";
 
 // 施設詳細データの型定義
 interface FacilityDetail {
   id: string;
   name: string;
-  address: string;
-  phone: string;
-  email: string;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
   facility_type: string;
-  opening_hours: Record<string, string>;
-  features: Record<string, boolean>;
+  opening_hours: any;
+  features: any;
   company_id: string;
-  qr_code: string;
+  qr_code: string | null;
+  latitude: number | null;
+  longitude: number | null;
   companies?: {
     name: string;
     code: string;
   };
-  pricing?: {
-    membership_monthly: number;
-    membership_yearly: number;
-    day_pass: number;
-    student_discount: number;
-    senior_discount: number;
-  };
-  equipment?: string[];
-  classes?: Array<{
+  activity_types?: Array<{
+    id: string;
     name: string;
-    schedule: string;
-    instructor: string;
-    capacity: number;
+    category: string;
+    description: string | null;
+    duration_minutes: number | null;
+    calories_per_hour: number | null;
   }>;
-  description?: string;
 }
 
 type Props = DrawerScreenProps<RootDrawerParamList, "FacilityDetail">;
 
-export default function FacilityDetailScreen({ route, navigation }: Props) {
+export default function FacilityDetailScreen({ route }: Props) {
   const { facility } = route.params;
+  const { t } = useI18n();
+  const [loading, setLoading] = useState(true);
+  const [detailData, setDetailData] = useState<FacilityDetail | null>(null);
 
-  // 施設詳細データ（実際のデータベースデータを模擬）
-  const detailData: FacilityDetail = {
-    ...facility,
-    pricing: {
-      membership_monthly:
-        facility.name === "秋川体育館"
-          ? 6800
-          : facility.name === "あきる野市民プール"
-          ? 4500
-          : facility.name === "五日市ファインプラザ"
-          ? 7200
-          : facility.name === "フィットネスワールド渋谷店"
-          ? 12800
-          : 9800,
-      membership_yearly:
-        facility.name === "秋川体育館"
-          ? 68000
-          : facility.name === "あきる野市民プール"
-          ? 45000
-          : facility.name === "五日市ファインプラザ"
-          ? 72000
-          : facility.name === "フィットネスワールド渋谷店"
-          ? 128000
-          : 98000,
-      day_pass:
-        facility.name === "秋川体育館"
-          ? 800
-          : facility.name === "あきる野市民プール"
-          ? 500
-          : facility.name === "五日市ファインプラザ"
-          ? 900
-          : facility.name === "フィットネスワールド渋谷店"
-          ? 1500
-          : 1200,
-      student_discount: 20,
-      senior_discount: 15,
-    },
-    equipment:
-      facility.facility_type === "gym"
-        ? [
-            "トレッドミル",
-            "エアロバイク",
-            "ダンベル",
-            "バーベル",
-            "ケーブルマシン",
-            "レッグプレス",
-            "ベンチプレス",
-          ]
-        : facility.facility_type === "pool"
-        ? [
-            "25mプール",
-            "子供用プール",
-            "ジャグジー",
-            "サウナ",
-            "シャワールーム",
-          ]
-        : [
-            "ヨガマット",
-            "ブロック",
-            "ストラップ",
-            "瞑想クッション",
-            "アロマディフューザー",
-          ],
-    classes:
-      facility.facility_type === "gym"
-        ? [
-            {
-              name: "筋力トレーニング基礎",
-              schedule: "月・水・金 19:00-20:00",
-              instructor: "田中コーチ",
-              capacity: 15,
-            },
-            {
-              name: "エアロビクス",
-              schedule: "火・木 18:30-19:30",
-              instructor: "佐藤インストラクター",
-              capacity: 20,
-            },
-            {
-              name: "初心者向け筋トレ",
-              schedule: "土 10:00-11:00",
-              instructor: "山田トレーナー",
-              capacity: 12,
-            },
-          ]
-        : facility.facility_type === "pool"
-        ? [
-            {
-              name: "水中ウォーキング",
-              schedule: "毎日 10:00-11:00",
-              instructor: "鈴木コーチ",
-              capacity: 25,
-            },
-            {
-              name: "競泳指導",
-              schedule: "月・水・金 19:00-20:00",
-              instructor: "高橋コーチ",
-              capacity: 10,
-            },
-            {
-              name: "アクアビクス",
-              schedule: "火・木・土 14:00-15:00",
-              instructor: "中村インストラクター",
-              capacity: 15,
-            },
-          ]
-        : [
-            {
-              name: "ベーシックヨガ",
-              schedule: "毎日 10:00-11:00",
-              instructor: "田中先生",
-              capacity: 20,
-            },
-            {
-              name: "パワーヨガ",
-              schedule: "月・水・金 19:00-20:00",
-              instructor: "山田先生",
-              capacity: 15,
-            },
-            {
-              name: "リラックスヨガ",
-              schedule: "火・木・土 14:00-15:00",
-              instructor: "佐藤先生",
-              capacity: 18,
-            },
-          ],
-    description:
-      facility.name === "秋川体育館"
-        ? "あきる野市の中心部にある総合体育館。バスケットボール、バドミントン、卓球など様々なスポーツを楽しめる施設です。地域住民の健康づくりをサポートしています。"
-        : facility.name === "あきる野市民プール"
-        ? "25mプールを完備した市民プール。水泳教室やアクアビクスなど水中運動プログラムが充実しています。サウナやジャグジーもご利用いただけます。"
-        : facility.name === "五日市ファインプラザ"
-        ? "多目的ホールとトレーニングジムを併設した複合施設。会議室もあり、地域のイベントやセミナーにもご利用いただけます。"
-        : facility.name === "フィットネスワールド渋谷店"
-        ? "渋谷駅から徒歩5分のアクセス抜群なフィットネスクラブ。最新マシンを完備し、プールやサウナも楽しめる総合フィットネス施設です。"
-        : "ヨガとピラティスに特化したスタジオ。経験豊富なインストラクターが、初心者から上級者まで丁寧に指導いたします。",
+  useEffect(() => {
+    fetchFacilityDetails();
+  }, [facility.id]);
+
+  const fetchFacilityDetails = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch facility with related data
+      const { data: facilityData, error: facilityError } = await supabase
+        .from("facilities")
+        .select(`
+          *,
+          companies (
+            name,
+            code
+          ),
+          activity_types (
+            id,
+            name,
+            category,
+            description,
+            duration_minutes,
+            calories_per_hour
+          )
+        `)
+        .eq("id", facility.id)
+        .single();
+
+      if (facilityError) throw facilityError;
+
+      if (facilityData) {
+        setDetailData(facilityData as FacilityDetail);
+      }
+    } catch (error) {
+      console.error("Error fetching facility details:", error);
+      Alert.alert(t("common.error"), t("common.dataLoadError"));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getFacilityIcon = (facilityType: string) => {
@@ -270,15 +175,55 @@ export default function FacilityDetailScreen({ route, navigation }: Props) {
   };
 
   const handleCall = () => {
-    Linking.openURL(`tel:${detailData.phone}`);
+    if (detailData?.phone) {
+      Linking.openURL(`tel:${detailData.phone}`);
+    }
   };
 
   const handleEmail = () => {
-    Linking.openURL(`mailto:${detailData.email}`);
+    if (detailData?.email) {
+      Linking.openURL(`mailto:${detailData.email}`);
+    }
   };
 
+  const handleQRCode = () => {
+    // TODO: Implement QR code display
+    Alert.alert("QRコード", `QRコード: ${detailData?.qr_code || '未設定'}`);
+  };
+
+  const handleReservation = () => {
+    // TODO: Implement reservation
+    Alert.alert("予約", "予約機能は準備中です");
+  };
+
+  if (loading) {
+    return (
+      <KeyboardAvoidingWrapper>
+        <ScreenWrapper backgroundColor={colors.purple[50]}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>{t("common.loading")}</Text>
+          </View>
+        </ScreenWrapper>
+      </KeyboardAvoidingWrapper>
+    );
+  }
+
+  if (!detailData) {
+    return (
+      <KeyboardAvoidingWrapper>
+        <ScreenWrapper backgroundColor={colors.purple[50]}>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{t("common.noData")}</Text>
+          </View>
+        </ScreenWrapper>
+      </KeyboardAvoidingWrapper>
+    );
+  }
+
   return (
-    <ScreenWrapper backgroundColor={colors.purple[50]} scrollable>
+    <KeyboardAvoidingWrapper>
+      <ScreenWrapper backgroundColor={colors.purple[50]} scrollable keyboardAvoiding={false} dismissKeyboardOnTap={false}>
       <View>
         {/* 施設基本情報 */}
         <View style={styles.facilityCard}>
@@ -301,20 +246,26 @@ export default function FacilityDetailScreen({ route, navigation }: Props) {
             </View>
           </View>
 
-          <Text style={styles.description}>{detailData.description}</Text>
+          {detailData.features?.description && (
+            <Text style={styles.description}>{detailData.features.description}</Text>
+          )}
 
           <View style={styles.contactActions}>
-            <TouchableOpacity style={styles.contactButton} onPress={handleCall}>
-              <Ionicons name="call" size={20} color={colors.white} />
-              <Text style={styles.contactButtonText}>電話</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.contactButton, styles.emailButton]}
-              onPress={handleEmail}
-            >
-              <Ionicons name="mail" size={20} color={colors.white} />
-              <Text style={styles.contactButtonText}>メール</Text>
-            </TouchableOpacity>
+            {detailData.phone && (
+              <TouchableOpacity style={styles.contactButton} onPress={handleCall}>
+                <Ionicons name="call" size={20} color={colors.white} />
+                <Text style={styles.contactButtonText}>電話</Text>
+              </TouchableOpacity>
+            )}
+            {detailData.email && (
+              <TouchableOpacity
+                style={[styles.contactButton, styles.emailButton]}
+                onPress={handleEmail}
+              >
+                <Ionicons name="mail" size={20} color={colors.white} />
+                <Text style={styles.contactButtonText}>メール</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -327,15 +278,15 @@ export default function FacilityDetailScreen({ route, navigation }: Props) {
               size={20}
               color={colors.gray[600]}
             />
-            <Text style={styles.infoText}>{detailData.address}</Text>
+            <Text style={styles.infoText}>{detailData.address || "住所不明"}</Text>
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="call-outline" size={20} color={colors.gray[600]} />
-            <Text style={styles.infoText}>{detailData.phone}</Text>
+            <Text style={styles.infoText}>{detailData.phone || "電話番号不明"}</Text>
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="mail-outline" size={20} color={colors.gray[600]} />
-            <Text style={styles.infoText}>{detailData.email}</Text>
+            <Text style={styles.infoText}>{detailData.email || "メールアドレス不明"}</Text>
           </View>
         </View>
 
@@ -347,42 +298,21 @@ export default function FacilityDetailScreen({ route, navigation }: Props) {
           </Text>
         </View>
 
-        {/* 料金設定 */}
-        <View style={styles.infoCard}>
-          <Text style={styles.cardTitle}>料金設定</Text>
-          <View style={styles.pricingContainer}>
-            <View style={styles.pricingRow}>
-              <Text style={styles.pricingLabel}>月会費</Text>
-              <Text style={styles.pricingValue}>
-                ¥{detailData.pricing?.membership_monthly.toLocaleString()}
-              </Text>
-            </View>
-            <View style={styles.pricingRow}>
-              <Text style={styles.pricingLabel}>年会費</Text>
-              <Text style={styles.pricingValue}>
-                ¥{detailData.pricing?.membership_yearly.toLocaleString()}
-              </Text>
-            </View>
-            <View style={styles.pricingRow}>
-              <Text style={styles.pricingLabel}>1日利用券</Text>
-              <Text style={styles.pricingValue}>
-                ¥{detailData.pricing?.day_pass.toLocaleString()}
-              </Text>
-            </View>
-            <View style={styles.discountContainer}>
-              <Text style={styles.discountText}>
-                学生割引: {detailData.pricing?.student_discount}% OFF
-              </Text>
-              <Text style={styles.discountText}>
-                シニア割引: {detailData.pricing?.senior_discount}% OFF
+        {/* 料金設定 - 将来的に料金テーブルから取得 */}
+        {detailData.features?.pricing && (
+          <View style={styles.infoCard}>
+            <Text style={styles.cardTitle}>料金設定</Text>
+            <View style={styles.pricingContainer}>
+              <Text style={styles.pricingLabel}>
+                料金情報は施設にお問い合わせください
               </Text>
             </View>
           </View>
-        </View>
+        )}
 
         {/* 設備・機器 */}
         <View style={styles.infoCard}>
-          <Text style={styles.cardTitle}>設備・機器</Text>
+          <Text style={styles.cardTitle}>設備・サービス</Text>
           <View style={styles.featuresList}>
             {getFeaturesList(detailData.features).map((feature, index) => (
               <View key={index} style={styles.featureTag}>
@@ -390,50 +320,53 @@ export default function FacilityDetailScreen({ route, navigation }: Props) {
               </View>
             ))}
           </View>
-          {detailData.equipment && (
-            <View style={styles.equipmentContainer}>
-              <Text style={styles.equipmentTitle}>利用可能機器</Text>
-              {detailData.equipment.map((item, index) => (
-                <Text key={index} style={styles.equipmentItem}>
-                  • {item}
-                </Text>
-              ))}
-            </View>
-          )}
         </View>
 
-        {/* クラス・プログラム */}
-        <View style={styles.infoCard}>
-          <Text style={styles.cardTitle}>クラス・プログラム</Text>
-          {detailData.classes?.map((classItem, index) => (
-            <View key={index} style={styles.classItem}>
-              <Text style={styles.className}>{classItem.name}</Text>
-              <Text style={styles.classSchedule}>{classItem.schedule}</Text>
-              <Text style={styles.classInstructor}>
-                講師: {classItem.instructor}
-              </Text>
-              <Text style={styles.classCapacity}>
-                定員: {classItem.capacity}名
-              </Text>
-            </View>
-          ))}
-        </View>
+        {/* アクティビティタイプ */}
+        {detailData.activity_types && detailData.activity_types.length > 0 && (
+          <View style={styles.infoCard}>
+            <Text style={styles.cardTitle}>利用可能なアクティビティ</Text>
+            {detailData.activity_types.map((activity) => (
+              <View key={activity.id} style={styles.classItem}>
+                <Text style={styles.className}>{activity.name}</Text>
+                {activity.description && (
+                  <Text style={styles.classSchedule}>{activity.description}</Text>
+                )}
+                <View style={styles.activityDetails}>
+                  {activity.duration_minutes && (
+                    <Text style={styles.classCapacity}>
+                      所要時間: {activity.duration_minutes}分
+                    </Text>
+                  )}
+                  {activity.calories_per_hour && (
+                    <Text style={styles.classCapacity}>
+                      消費カロリー: {activity.calories_per_hour}kcal/時間
+                    </Text>
+                  )}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* 予約・問い合わせボタン */}
         <View style={styles.actionContainer}>
-          <TouchableOpacity style={styles.reservationButton}>
+          <TouchableOpacity style={styles.reservationButton} onPress={handleReservation}>
             <Ionicons name="calendar-outline" size={20} color={colors.white} />
             <Text style={styles.actionButtonText}>予約・見学申込</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.qrButton}>
-            <Ionicons name="qr-code-outline" size={20} color={colors.primary} />
-            <Text style={styles.qrButtonText}>QRコード</Text>
-          </TouchableOpacity>
+          {detailData.qr_code && (
+            <TouchableOpacity style={styles.qrButton} onPress={handleQRCode}>
+              <Ionicons name="qr-code-outline" size={20} color={colors.primary} />
+              <Text style={styles.qrButtonText}>QRコード</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={{ height: 20 }} />
       </View>
-    </ScreenWrapper>
+      </ScreenWrapper>
+    </KeyboardAvoidingWrapper>
   );
 }
 
@@ -660,5 +593,30 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.primary,
     fontWeight: "600",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    ...typography.body,
+    color: colors.gray[600],
+    marginTop: spacing.md,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: layout.screenPadding,
+  },
+  errorText: {
+    ...typography.body,
+    color: colors.gray[600],
+    textAlign: "center",
+  },
+  activityDetails: {
+    marginTop: spacing.sm,
+    gap: spacing.xs,
   },
 });

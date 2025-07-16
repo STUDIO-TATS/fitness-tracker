@@ -17,10 +17,10 @@ export type Database = {
     Functions: {
       graphql: {
         Args: {
+          query?: string
           operationName?: string
           extensions?: Json
           variables?: Json
-          query?: string
         }
         Returns: Json
       }
@@ -533,66 +533,6 @@ export type Database = {
           },
         ]
       }
-      notifications: {
-        Row: {
-          category: string
-          created_at: string
-          facility_id: string | null
-          facility_name: string | null
-          id: string
-          is_read: boolean | null
-          message: string
-          metadata: Json | null
-          title: string
-          type: string
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          category: string
-          created_at?: string
-          facility_id?: string | null
-          facility_name?: string | null
-          id?: string
-          is_read?: boolean | null
-          message: string
-          metadata?: Json | null
-          title: string
-          type: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          facility_id?: string | null
-          facility_name?: string | null
-          id?: string
-          is_read?: boolean | null
-          message?: string
-          metadata?: Json | null
-          title?: string
-          type?: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_facility_id_fkey"
-            columns: ["facility_id"]
-            isOneToOne: false
-            referencedRelation: "facilities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_facility_id_fkey"
-            columns: ["facility_id"]
-            isOneToOne: false
-            referencedRelation: "facility_usage_summary"
-            referencedColumns: ["facility_id"]
-          },
-        ]
-      }
       point_rules: {
         Row: {
           activity_category: string | null
@@ -1056,7 +996,7 @@ export type Database = {
     }
     Functions: {
       calculate_and_award_points: {
-        Args: { user_id_input: string; activity_log_id_input: string }
+        Args: { activity_log_id_input: string; user_id_input: string }
         Returns: number
       }
       get_company_stats: {
@@ -1074,23 +1014,23 @@ export type Database = {
       get_facility_by_qr_code: {
         Args: { qr_code_input: string }
         Returns: {
+          facility_type: string
+          branch_name: string
+          available_activities: Json
           facility_id: string
           facility_name: string
           company_name: string
-          branch_name: string
-          facility_type: string
-          available_activities: Json
         }[]
       }
       get_facility_ranking: {
-        Args: { company_id_input: string; days_back?: number }
+        Args: { days_back?: number; company_id_input: string }
         Returns: {
-          facility_id: string
-          facility_name: string
-          total_visits: number
-          unique_visitors: number
           total_duration_minutes: number
           avg_duration_minutes: number
+          total_visits: number
+          facility_id: string
+          unique_visitors: number
+          facility_name: string
         }[]
       }
     }

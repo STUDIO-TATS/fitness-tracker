@@ -45,8 +45,7 @@ export default function ActivityLogsScreen() {
 
   const fetchActivities = async () => {
     if (!session?.user?.id) {
-      // セッションがない場合はモックデータを使用
-      setActivities(getMockActivities());
+      setActivities([]);
       setLoading(false);
       return;
     }
@@ -90,7 +89,7 @@ export default function ActivityLogsScreen() {
     } catch (error) {
       console.error('Error fetching activities:', error);
       Alert.alert(t('common.error'), t('common.dataLoadError'));
-      setActivities(getMockActivities());
+      setActivities([]);
     } finally {
       setLoading(false);
     }
@@ -175,47 +174,6 @@ export default function ActivityLogsScreen() {
     return result;
   };
 
-  const getMockActivities = (): DaySection[] => {
-    return [
-      {
-        title: t('common.today'),
-        data: [
-          {
-            id: '1',
-            title: '朝のワークアウト完了',
-            description: '上半身トレーニング 45分',
-            time: '08:30',
-            type: 'workout',
-            icon: 'barbell',
-            iconColor: colors.primary,
-          },
-          {
-            id: '2',
-            title: '体重測定',
-            description: '70.2 kg (-0.3kg)',
-            time: '07:00',
-            type: 'measurement',
-            icon: 'body',
-            iconColor: colors.purple[500],
-          },
-        ],
-      },
-      {
-        title: t('common.yesterday'),
-        data: [
-          {
-            id: '3',
-            title: '夕方のランニング',
-            description: '5km, 28分',
-            time: '18:30',
-            type: 'workout',
-            icon: 'walk',
-            iconColor: colors.primary,
-          },
-        ],
-      },
-    ];
-  };
 
   const filters = [
     { id: 'all', label: t('activityLogs.filterAll'), icon: 'apps' },

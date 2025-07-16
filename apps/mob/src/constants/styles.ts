@@ -117,12 +117,19 @@ export const commonStyles = {
   // Section
   section: {
     marginBottom: layout.sectionSpacing,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    marginHorizontal: layout.screenPadding,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+    ...shadows.md,
   },
   sectionHeader: {
     flexDirection: "row" as const,
     justifyContent: "space-between" as const,
     alignItems: "center" as const,
-    paddingHorizontal: layout.screenPadding,
+    paddingHorizontal: 0,
     marginBottom: spacing.lg,
   },
   sectionTitle: {
@@ -136,6 +143,8 @@ export const commonStyles = {
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
     ...shadows.md,
   },
   cardTitle: {
@@ -153,6 +162,8 @@ export const commonStyles = {
     borderRadius: borderRadius.md,
     padding: spacing.lg,
     marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
     ...shadows.sm,
   },
 

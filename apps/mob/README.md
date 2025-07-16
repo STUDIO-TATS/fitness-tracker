@@ -1,6 +1,6 @@
 # Fitness Tracker Mobile App
 
-Expo SDK 53を使用したフィットネストラッカーモバイルアプリケーション。
+Expo SDK 53 を使用したフィットネストラッカーモバイルアプリケーション。
 
 ## ローカル開発環境
 
@@ -10,13 +10,14 @@ Expo SDK 53を使用したフィットネストラッカーモバイルアプリ
 
 - `admin@fittracker.com` - システム管理者
 - `staff@fittracker.com` - スタッフ太郎
-- `user1@example.com` - 田中太郎  
+- `user1@example.com` - 田中太郎
 - `user2@example.com` - 鈴木花子
 - `user3@example.com` - 佐藤次郎
 
 ### 起動方法
 
-1. ルートディレクトリでSupabaseを起動：
+1. ルートディレクトリで Supabase を起動：
+
    ```bash
    pnpm supabase start
    ```
@@ -32,17 +33,19 @@ Expo SDK 53を使用したフィットネストラッカーモバイルアプリ
 #### ネットワークエラーが発生する場合
 
 1. `.env.local` ファイルが正しく設定されているか確認：
+
    ```
    EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
    EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
    ```
 
-2. Supabaseが起動しているか確認：
+2. Supabase が起動しているか確認：
+
    ```bash
    pnpm supabase status
    ```
 
-3. Expoのキャッシュをクリア：
+3. Expo のキャッシュをクリア：
    ```bash
    pnpm expo start --clear
    ```
@@ -50,6 +53,7 @@ Expo SDK 53を使用したフィットネストラッカーモバイルアプリ
 #### テストユーザーが存在しない場合
 
 ルートディレクトリで以下を実行：
+
 ```bash
-./scripts/create-auth-users.sh
+
 ```

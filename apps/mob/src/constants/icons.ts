@@ -171,6 +171,8 @@ export const icons = {
     stop: 'stop' as IconName,
     stopCircle: 'stop-circle' as IconName,
     stopCircleOutline: 'stop-circle-outline' as IconName,
+    notifications: 'notifications' as IconName,
+    notificationsOutline: 'notifications-outline' as IconName,
   },
 
   // 会員・認証

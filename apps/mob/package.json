@@ -7,7 +7,12 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "types:generate": "supabase gen types typescript --project-id fglbnfkmybahntsxrjwv > src/types/supabase.ts"
+    "types:generate": "supabase gen types typescript --project-id fglbnfkmybahntsxrjwv > src/types/supabase.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "check": "npm run typecheck && npm run lint",
+    "expo:doctor": "npx expo-doctor"
   },
   "dependencies": {
     "@expo-google-fonts/noto-sans-jp": "^0.4.1",
@@ -24,6 +29,7 @@
     "expo-device": "~7.1.4",
     "expo-font": "~13.3.2",
     "expo-localization": "^16.1.6",
+    "expo-location": "^18.1.6",
     "expo-notifications": "~0.31.4",
     "expo-sharing": "^13.1.5",
     "expo-status-bar": "~2.2.3",

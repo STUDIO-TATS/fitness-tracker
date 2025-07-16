@@ -2,9 +2,9 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import HomeScreen from '../screens/HomeScreen';
-import GoalsScreen from '../screens/GoalsScreen';
-import MeasurementScreen from '../screens/MeasurementScreen';
-import WorkoutScreen from '../screens/WorkoutScreen';
+import GoalsStackNavigator from './GoalsStackNavigator';
+import MeasurementStackNavigator from './MeasurementStackNavigator';
+import WorkoutStackNavigator from './WorkoutStackNavigator';
 import { icons } from '../constants/icons';
 import { theme } from '../constants/theme';
 import { useI18n } from '../hooks/useI18n';
@@ -56,17 +56,17 @@ export default function TabNavigator() {
       />
       <Tab.Screen 
         name="Goals" 
-        component={GoalsScreen}
+        component={GoalsStackNavigator}
         options={{ tabBarLabel: t('navigation.goals') }}
       />
       <Tab.Screen 
         name="Measurement" 
-        component={MeasurementScreen}
+        component={MeasurementStackNavigator}
         options={{ tabBarLabel: t('navigation.measurement') }}
       />
       <Tab.Screen 
         name="Workout" 
-        component={WorkoutScreen}
+        component={WorkoutStackNavigator}
         options={{ tabBarLabel: t('navigation.workout') }}
       />
     </Tab.Navigator>

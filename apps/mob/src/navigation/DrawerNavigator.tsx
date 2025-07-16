@@ -1,19 +1,69 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { TouchableOpacity } from "react-native";
 import { createDrawerNavigator, DrawerNavigationProp } from "@react-navigation/drawer";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import TabNavigator from "./TabNavigator";
+import { NotificationBadge } from "../components/NotificationBadge";
 import { icons } from "../constants/icons";
 import { theme } from "../constants/theme";
 import { useI18n } from "../hooks/useI18n";
 import { RootDrawerParamList } from "../types/navigation";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "../hooks/useAuth";
+import NotificationScreen from "../screens/NotificationScreen";
 
 const Drawer = createDrawerNavigator<RootDrawerParamList>();
 
 export default function DrawerNavigator() {
   const { t } = useI18n();
   const navigation = useNavigation<any>();
+  const { session } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchUnreadCount();
+      
+      // リアルタイムサブスクリプションを設定
+      const subscription = supabase
+        .channel('notifications')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${session.user.id}`,
+          },
+          () => {
+            fetchUnreadCount();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, [session]);
+
+  const fetchUnreadCount = async () => {
+    if (!session?.user?.id) return;
+    
+    try {
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .eq('is_read', false);
+
+      if (error) throw error;
+      setUnreadCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
 
   return (
     <Drawer.Navigator
@@ -36,35 +86,65 @@ export default function DrawerNavigator() {
         // スライドアニメーションの設定
         drawerType: 'slide',
         overlayColor: 'rgba(0, 0, 0, 0.5)',
-        gestureEnabled: true,
         swipeEnabled: true,
       }}
     >
       <Drawer.Screen
         name="Main"
         component={TabNavigator}
-        options={({ navigation }) => ({
-          title: "Fitness Tracker",
-          drawerLabel: t("navigation.home"),
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name={icons.navigation.home} size={size} color={color} />
-          ),
-          headerLeft: () => (
-            <TouchableOpacity
-              onPress={() => navigation.openDrawer()}
-              style={{
-                marginLeft: 16,
-                padding: 8,
-              }}
-            >
-              <Ionicons
-                name="menu"
-                size={24}
-                color={theme.colors.text.inverse}
+        options={({ navigation, route }) => {
+          // 現在のタブに基づいてタイトルを決定
+          const getTitle = () => {
+            const state = navigation.getState();
+            const tabState = state.routes[state.index]?.state;
+            
+            if (tabState) {
+              const activeTab = tabState.routes[tabState.index || 0];
+              switch (activeTab.name) {
+                case 'Home':
+                  return "Fitness Tracker";
+                case 'Goals':
+                  return t("navigation.goals");
+                case 'Measurement':
+                  return t("navigation.measurement");
+                case 'Workout':
+                  return t("navigation.workout");
+                default:
+                  return "Fitness Tracker";
+              }
+            }
+            return "Fitness Tracker";
+          };
+
+          return {
+            title: getTitle(),
+            drawerLabel: t("navigation.home"),
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name={icons.navigation.home} size={size} color={color} />
+            ),
+            headerLeft: () => (
+              <TouchableOpacity
+                onPress={() => navigation.openDrawer()}
+                style={{
+                  marginLeft: 16,
+                  padding: 8,
+                }}
+              >
+                <Ionicons
+                  name="menu"
+                  size={24}
+                  color={theme.colors.text.inverse}
+                />
+              </TouchableOpacity>
+            ),
+            headerRight: () => (
+              <NotificationBadge
+                count={unreadCount}
+                onPress={() => navigation.navigate('Notifications')}
               />
-            </TouchableOpacity>
-          ),
-        })}
+            ),
+          };
+        }}
       />
       <Drawer.Screen
         name="Profile"
@@ -141,6 +221,16 @@ export default function DrawerNavigator() {
             navigation.navigate('ActivityLogs');
           },
         })}
+      />
+      <Drawer.Screen
+        name="Notifications"
+        component={NotificationScreen}
+        options={{
+          drawerLabel: t("navigation.notifications"),
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="notifications-outline" size={size} color={color} />
+          ),
+        }}
       />
       <Drawer.Screen
         name="Calendar"

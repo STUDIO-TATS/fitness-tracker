@@ -1010,7 +1010,368 @@ async function seedDatabase(): Promise<void> {
       await supabase.from('measurements').insert(measurements.reverse());
     }
 
-    // 13. ポイント履歴の作成
+    // 13. Goals（目標）の作成
+    console.log('\n🎯 Creating goals...');
+    
+    // user1の目標
+    if (userIds['user1@example.com']) {
+      await supabase.from('goals').insert([
+        {
+          user_id: userIds['user1@example.com'],
+          title: '週3回のワークアウト',
+          description: '毎週最低3回はジムでトレーニングする',
+          target_value: 3,
+          current_value: 2,
+          unit: '回',
+          category: 'weekly',
+          target_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          color: '#6366F1',
+          status: 'active'
+        },
+        {
+          user_id: userIds['user1@example.com'],
+          title: '体重を減らす',
+          description: '3ヶ月で3kg減量する',
+          target_value: 3,
+          current_value: 1.5,
+          unit: 'kg',
+          category: 'monthly',
+          target_date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          color: '#A855F7',
+          status: 'active'
+        },
+        {
+          user_id: userIds['user1@example.com'],
+          title: '水分摂取',
+          description: '毎日2リットルの水を飲む',
+          target_value: 2,
+          current_value: 1.8,
+          unit: 'L',
+          category: 'daily',
+          target_date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          color: '#14B8A6',
+          status: 'active'
+        },
+        {
+          user_id: userIds['user1@example.com'],
+          title: 'ベンチプレス100kg',
+          description: '年内にベンチプレス100kgを達成',
+          target_value: 100,
+          current_value: 85,
+          unit: 'kg',
+          category: 'yearly',
+          target_date: '2024-12-31',
+          color: '#F97316',
+          status: 'active'
+        }
+      ]);
+    }
+    
+    // user2の目標
+    if (userIds['user2@example.com']) {
+      await supabase.from('goals').insert([
+        {
+          user_id: userIds['user2@example.com'],
+          title: 'ヨガクラス参加',
+          description: '週2回のヨガクラスに参加',
+          target_value: 2,
+          current_value: 2,
+          unit: '回',
+          category: 'weekly',
+          target_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          color: '#EC4899',
+          status: 'active'
+        },
+        {
+          user_id: userIds['user2@example.com'],
+          title: '柔軟性向上',
+          description: '前屈で床に手が届くようになる',
+          target_value: 100,
+          current_value: 75,
+          unit: '%',
+          category: 'monthly',
+          target_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          color: '#8B5CF6',
+          status: 'active'
+        },
+        {
+          user_id: userIds['user2@example.com'],
+          title: '体脂肪率20%以下',
+          description: '健康的な体脂肪率を維持',
+          target_value: 20,
+          current_value: 23,
+          unit: '%',
+          category: 'monthly',
+          target_date: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          color: '#F43F5E',
+          status: 'active'
+        }
+      ]);
+    }
+    
+    // user3の目標
+    if (userIds['user3@example.com']) {
+      await supabase.from('goals').insert([
+        {
+          user_id: userIds['user3@example.com'],
+          title: '毎日泳ぐ',
+          description: '平日は毎日プールで泳ぐ',
+          target_value: 5,
+          current_value: 5,
+          unit: '日',
+          category: 'weekly',
+          target_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          color: '#3B82F6',
+          status: 'active'
+        },
+        {
+          user_id: userIds['user3@example.com'],
+          title: '月間100km',
+          description: '月間の総泳距離100km達成',
+          target_value: 100,
+          current_value: 72,
+          unit: 'km',
+          category: 'monthly',
+          target_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          color: '#0EA5E9',
+          status: 'active'
+        },
+        {
+          user_id: userIds['user3@example.com'],
+          title: 'マスターズ大会出場',
+          description: '次回マスターズ水泳大会に出場',
+          target_value: 1,
+          current_value: 0,
+          unit: '回',
+          category: 'yearly',
+          target_date: '2024-09-15',
+          color: '#22C55E',
+          status: 'active'
+        }
+      ]);
+    }
+    
+    // 14. Workouts（ワークアウト記録）の作成
+    console.log('\n💪 Creating workouts...');
+    
+    // user1のワークアウト
+    if (userIds['user1@example.com']) {
+      // 最近のワークアウト
+      const workout1 = await supabase.from('workouts').insert({
+        user_id: userIds['user1@example.com'],
+        name: '上半身トレーニング',
+        date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        duration_minutes: 75,
+        calories_burned: 450,
+        notes: '今日は調子が良かった'
+      }).select().single();
+      
+      if (workout1.data) {
+        await supabase.from('workout_exercises').insert([
+          {
+            workout_id: workout1.data.id,
+            exercise_name: 'ベンチプレス',
+            sets: 4,
+            reps: 8,
+            weight: 85,
+            rest_seconds: 120,
+            order_index: 1
+          },
+          {
+            workout_id: workout1.data.id,
+            exercise_name: 'ダンベルフライ',
+            sets: 3,
+            reps: 12,
+            weight: 15,
+            rest_seconds: 90,
+            order_index: 2
+          },
+          {
+            workout_id: workout1.data.id,
+            exercise_name: 'ショルダープレス',
+            sets: 4,
+            reps: 10,
+            weight: 25,
+            rest_seconds: 90,
+            order_index: 3
+          },
+          {
+            workout_id: workout1.data.id,
+            exercise_name: 'サイドレイズ',
+            sets: 3,
+            reps: 15,
+            weight: 8,
+            rest_seconds: 60,
+            order_index: 4
+          },
+          {
+            workout_id: workout1.data.id,
+            exercise_name: 'トライセプスエクステンション',
+            sets: 3,
+            reps: 12,
+            weight: 20,
+            rest_seconds: 60,
+            order_index: 5
+          }
+        ]);
+      }
+      
+      const workout2 = await supabase.from('workouts').insert({
+        user_id: userIds['user1@example.com'],
+        name: '下半身トレーニング',
+        date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        duration_minutes: 60,
+        calories_burned: 380,
+        notes: 'スクワットで新記録！'
+      }).select().single();
+      
+      if (workout2.data) {
+        await supabase.from('workout_exercises').insert([
+          {
+            workout_id: workout2.data.id,
+            exercise_name: 'スクワット',
+            sets: 5,
+            reps: 10,
+            weight: 100,
+            rest_seconds: 180,
+            order_index: 1
+          },
+          {
+            workout_id: workout2.data.id,
+            exercise_name: 'レッグプレス',
+            sets: 4,
+            reps: 12,
+            weight: 150,
+            rest_seconds: 120,
+            order_index: 2
+          },
+          {
+            workout_id: workout2.data.id,
+            exercise_name: 'レッグカール',
+            sets: 3,
+            reps: 15,
+            weight: 40,
+            rest_seconds: 90,
+            order_index: 3
+          },
+          {
+            workout_id: workout2.data.id,
+            exercise_name: 'カーフレイズ',
+            sets: 4,
+            reps: 20,
+            weight: 60,
+            rest_seconds: 60,
+            order_index: 4
+          }
+        ]);
+      }
+      
+      // 今日のワークアウト
+      await supabase.from('workouts').insert({
+        user_id: userIds['user1@example.com'],
+        name: '有酸素運動',
+        date: new Date().toISOString().split('T')[0],
+        duration_minutes: 45,
+        calories_burned: 350,
+        notes: 'HIIT中心'
+      });
+    }
+    
+    // user2のワークアウト
+    if (userIds['user2@example.com']) {
+      const workout3 = await supabase.from('workouts').insert({
+        user_id: userIds['user2@example.com'],
+        name: 'モーニングヨガ',
+        date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        duration_minutes: 60,
+        calories_burned: 200,
+        notes: '心身ともにリフレッシュできた'
+      }).select().single();
+      
+      if (workout3.data) {
+        await supabase.from('workout_exercises').insert([
+          {
+            workout_id: workout3.data.id,
+            exercise_name: '太陽礼拝',
+            sets: 3,
+            reps: 12,
+            duration_seconds: 300,
+            order_index: 1,
+            notes: 'ウォームアップ'
+          },
+          {
+            workout_id: workout3.data.id,
+            exercise_name: '戦士のポーズ',
+            sets: 2,
+            reps: 1,
+            duration_seconds: 120,
+            order_index: 2,
+            notes: '左右各1分ホールド'
+          },
+          {
+            workout_id: workout3.data.id,
+            exercise_name: '木のポーズ',
+            sets: 2,
+            reps: 1,
+            duration_seconds: 90,
+            order_index: 3,
+            notes: 'バランス改善'
+          },
+          {
+            workout_id: workout3.data.id,
+            exercise_name: '屍のポーズ',
+            sets: 1,
+            reps: 1,
+            duration_seconds: 600,
+            order_index: 4,
+            notes: 'クールダウン'
+          }
+        ]);
+      }
+      
+      // 今日のワークアウト
+      await supabase.from('workouts').insert({
+        user_id: userIds['user2@example.com'],
+        name: 'パワーヨガ',
+        date: new Date().toISOString().split('T')[0],
+        duration_minutes: 75,
+        calories_burned: 350,
+        notes: '汗をかいて気持ちよかった'
+      });
+    }
+    
+    // user3のワークアウト
+    if (userIds['user3@example.com']) {
+      // 今朝のスイム
+      await supabase.from('workouts').insert({
+        user_id: userIds['user3@example.com'],
+        name: '朝スイム',
+        date: new Date().toISOString().split('T')[0],
+        duration_minutes: 90,
+        calories_burned: 750,
+        notes: 'クロール3km'
+      });
+      
+      // 過去のワークアウト（10日分）
+      for (let i = 1; i <= 10; i++) {
+        const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+        const dayOfWeek = date.getDay();
+        
+        // 週末は休み
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+        
+        await supabase.from('workouts').insert({
+          user_id: userIds['user3@example.com'],
+          name: i % 2 === 0 ? '朝スイム' : '夕方スイム',
+          date: date.toISOString().split('T')[0],
+          duration_minutes: 75 + Math.floor(Math.random() * 30),
+          calories_burned: 600 + Math.floor(Math.random() * 200),
+          notes: `${2.5 + Math.random()}km完泳`
+        });
+      }
+    }
+
+    // 15. ポイント履歴の作成
     console.log('\n💎 Creating point transactions...');
     
     // user1 - アクティブなポイント利用者
@@ -1216,6 +1577,122 @@ async function seedDatabase(): Promise<void> {
       await supabase.from('point_transactions').insert(transactions);
     }
 
+    // 16. 通知の作成
+    console.log('\n🔔 Creating notifications...');
+    
+    // 全ユーザーに共通の通知
+    const commonNotifications = [];
+    for (const email of Object.keys(userIds)) {
+      const userId = userIds[email];
+      
+      // アプリ通知
+      commonNotifications.push({
+        user_id: userId,
+        title: '新機能のお知らせ',
+        message: 'フィットネストラッカーに新しい機能が追加されました。ぜひお試しください！',
+        type: 'app',
+        category: 'アプリ制作会社',
+        is_read: false,
+        metadata: { feature: 'location_based_facilities' },
+        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+      });
+      
+      // アップデート通知
+      commonNotifications.push({
+        user_id: userId,
+        title: 'アプリのアップデート',
+        message: 'バージョン2.1.0がリリースされました。新機能とバグ修正が含まれています。',
+        type: 'app',
+        category: 'アプリ制作会社',
+        is_read: email === 'user1@example.com', // user1は既読
+        metadata: { version: '2.1.0' },
+        created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      });
+    }
+    
+    // user1への個別通知
+    if (userIds['user1@example.com'] && facility1) {
+      commonNotifications.push({
+        user_id: userIds['user1@example.com'],
+        title: '週間目標達成おめでとうございます！',
+        message: '今週の目標を達成しました。来週も頑張りましょう！',
+        type: 'achievement',
+        category: 'アプリ制作会社',
+        is_read: true,
+        metadata: { achievement_type: 'weekly_goal', points_earned: 250 },
+        created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+      });
+      
+      commonNotifications.push({
+        user_id: userIds['user1@example.com'],
+        title: '施設メンテナンスのお知らせ',
+        message: '1月20日（土）にメンテナンスを実施いたします。ご迷惑をおかけしますが、よろしくお願いします。',
+        type: 'facility',
+        category: '利用施設',
+        is_read: false,
+        facility_id: facility1.id,
+        facility_name: facility1.name,
+        metadata: { maintenance_date: '2024-01-20', duration_hours: 4 },
+        created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+      });
+    }
+    
+    // user2への個別通知
+    if (userIds['user2@example.com'] && facility3) {
+      commonNotifications.push({
+        user_id: userIds['user2@example.com'],
+        title: '新しいヨガクラスのご案内',
+        message: 'ヨガクラスの新しいスケジュールをお知らせします。',
+        type: 'facility',
+        category: '利用施設',
+        is_read: false,
+        facility_id: facility3.id,
+        facility_name: facility3.name,
+        metadata: { class_type: 'yoga', instructor: '佐藤先生' },
+        created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
+      });
+      
+      commonNotifications.push({
+        user_id: userIds['user2@example.com'],
+        title: '次回のレッスン予約リマインダー',
+        message: '明日のヨガレッスンの予約を忘れずに！',
+        type: 'reminder',
+        category: 'アプリ制作会社',
+        is_read: false,
+        metadata: { reminder_type: 'class_booking', class_date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString() },
+        created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
+      });
+    }
+    
+    // user3への個別通知
+    if (userIds['user3@example.com'] && facility4) {
+      commonNotifications.push({
+        user_id: userIds['user3@example.com'],
+        title: '月間100km達成まであと28km！',
+        message: '今月の目標達成まであと少しです。頑張ってください！',
+        type: 'achievement',
+        category: 'アプリ制作会社',
+        is_read: true,
+        metadata: { goal_type: 'monthly_distance', current: 72, target: 100 },
+        created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
+      });
+      
+      commonNotifications.push({
+        user_id: userIds['user3@example.com'],
+        title: 'プール予約状況のお知らせ',
+        message: '明日の早朝プールは混雑が予想されます。',
+        type: 'facility',
+        category: '利用施設',
+        is_read: false,
+        facility_id: facility4.id,
+        facility_name: facility4.name,
+        metadata: { crowded_times: ['6:00-7:00', '7:00-8:00'] },
+        created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
+      });
+    }
+    
+    await supabase.from('notifications').insert(commonNotifications);
+
     console.log('\n✨ Database seeding completed successfully!');
     
     // ポイント残高の再計算と更新
@@ -1269,7 +1746,8 @@ async function seedDatabase(): Promise<void> {
       'companies', 'branches', 'facilities', 'activity_types',
       'user_profiles', 'company_users', 'user_memberships',
       'point_systems', 'point_rules', 'user_points',
-      'activity_logs', 'point_transactions', 'measurements'
+      'activity_logs', 'point_transactions', 'measurements',
+      'goals', 'workouts', 'workout_exercises', 'notifications'
     ];
 
     for (const table of finalTables) {

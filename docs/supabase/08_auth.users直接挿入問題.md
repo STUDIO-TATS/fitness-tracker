@@ -1,12 +1,13 @@
-# auth.usersテーブルへの直接挿入問題の詳細解説
+# auth.users テーブルへの直接挿入問題の詳細解説
 
 ## 🔍 問題の概要
 
-Supabaseのauth.usersテーブルに直接SQLでユーザーを挿入しようとすると、一見成功したように見えても実際にはユーザーが作成されない問題があります。
+Supabase の auth.users テーブルに直接 SQL でユーザーを挿入しようとすると、一見成功したように見えても実際にはユーザーが作成されない問題があります。
 
 ## 📋 現象
 
 ### 試みたこと
+
 ```sql
 -- seedファイルでの直接挿入
 INSERT INTO auth.users (
@@ -27,20 +28,21 @@ INSERT INTO auth.users (
 ```
 
 ### 結果
+
 - エラーは発生しない
-- SELECTクエリでもデータが見えない
+- SELECT クエリでもデータが見えない
 - ユーザーとしてログインできない
 
 ## 🔬 原因分析
 
-### 1. Supabaseの内部アーキテクチャ
+### 1. Supabase の内部アーキテクチャ
 
-Supabaseのauth.usersテーブルは特殊な管理下にあり：
+Supabase の auth.users テーブルは特殊な管理下にあり：
 
-1. **GoTrue認証サービス**が管理
+1. **GoTrue 認証サービス**が管理
 2. **内部トリガー**による整合性チェック
-3. **関連テーブル**（auth.identities等）との同期が必要
-4. **JWTトークン生成**プロセスとの連携
+3. **関連テーブル**（auth.identities 等）との同期が必要
+4. **JWT トークン生成**プロセスとの連携
 
 ### 2. 直接挿入が失敗する理由
 
@@ -50,7 +52,7 @@ graph TD
     B --> C{内部検証}
     C -->|失敗| D[レコード無効化/削除]
     C -->|必須項目不足| D
-    
+
     E[Auth API] --> F[GoTrue Service]
     F --> G[検証プロセス]
     G --> H[auth.users挿入]
@@ -61,7 +63,7 @@ graph TD
 
 ### 3. 必要な関連データ
 
-auth.usersに加えて、以下のデータも同時に作成が必要：
+auth.users に加えて、以下のデータも同時に作成が必要：
 
 ```sql
 -- auth.identitiesテーブル
@@ -83,11 +85,10 @@ INSERT INTO auth.identities (
 
 ## ✅ 正しい解決方法
 
-### 1. Admin API使用（推奨）
+### 1. Admin API 使用（推奨）
 
 ```bash
 #!/bin/bash
-# scripts/create-auth-users.sh
 
 SUPABASE_URL="http://localhost:54321"
 SERVICE_ROLE_KEY="your-service-role-key"
@@ -110,7 +111,7 @@ curl -X POST "${SUPABASE_URL}/auth/v1/admin/users" \
 
 ```javascript
 // Node.js環境での実行
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -118,27 +119,27 @@ const supabase = createClient(
   {
     auth: {
       autoRefreshToken: false,
-      persistSession: false
-    }
+      persistSession: false,
+    },
   }
-)
+);
 
 async function createUser() {
   const { data, error } = await supabase.auth.admin.createUser({
-    email: 'test@example.com',
-    password: 'password123',
+    email: "test@example.com",
+    password: "password123",
     email_confirm: true,
     user_metadata: {
-      name: 'Test User'
-    }
-  })
-  
-  if (error) console.error('Error:', error)
-  else console.log('User created:', data)
+      name: "Test User",
+    },
+  });
+
+  if (error) console.error("Error:", error);
+  else console.log("User created:", data);
 }
 ```
 
-### 3. Supabase CLIでの対話的作成
+### 3. Supabase CLI での対話的作成
 
 ```bash
 # Supabase Studioを開く
@@ -154,7 +155,6 @@ pnpm db:studio
 
 ```bash
 # 1. 初回のみ：テストユーザー作成スクリプトを実行
-./scripts/create-auth-users.sh
 
 # 2. その後のリセット時
 pnpm db:reset  # テーブルとシードデータのみリセット
@@ -171,10 +171,10 @@ DO $$
 DECLARE
     user_id UUID;
 BEGIN
-    SELECT id INTO user_id 
-    FROM auth.users 
+    SELECT id INTO user_id
+    FROM auth.users
     WHERE email = 'test@example.com';
-    
+
     IF user_id IS NOT NULL THEN
         -- ユーザー関連データの作成
         INSERT INTO public.profiles (id, ...)
@@ -183,45 +183,47 @@ BEGIN
 END $$;
 ```
 
-### 3. CI/CD環境での対応
+### 3. CI/CD 環境での対応
 
 ```yaml
 # .github/workflows/test.yml
 steps:
   - name: Setup Supabase
     run: supabase start
-    
+
   - name: Create test users
     run: |
       # Admin APIでテストユーザーを作成
-      ./scripts/create-auth-users.sh
-    
+
   - name: Run tests
     run: pnpm test
 ```
 
 ## 📊 比較表
 
-| 方法 | 動作 | 推奨度 | 用途 |
-|------|------|--------|------|
-| SQL直接挿入 | ❌ | 使用禁止 | - |
-| Admin API | ✅ | ⭐⭐⭐⭐⭐ | 開発・テスト |
-| JS Admin SDK | ✅ | ⭐⭐⭐⭐⭐ | プログラマティック |
-| Supabase Studio | ✅ | ⭐⭐⭐⭐ | 手動・少数 |
-| SignUp API | ✅ | ⭐⭐⭐ | 本番ユーザー |
+| 方法            | 動作 | 推奨度     | 用途               |
+| --------------- | ---- | ---------- | ------------------ |
+| SQL 直接挿入    | ❌   | 使用禁止   | -                  |
+| Admin API       | ✅   | ⭐⭐⭐⭐⭐ | 開発・テスト       |
+| JS Admin SDK    | ✅   | ⭐⭐⭐⭐⭐ | プログラマティック |
+| Supabase Studio | ✅   | ⭐⭐⭐⭐   | 手動・少数         |
+| SignUp API      | ✅   | ⭐⭐⭐     | 本番ユーザー       |
 
 ## 🚨 注意事項
 
 ### セキュリティ
+
 - `service_role_key`は絶対に公開しない
-- Admin APIは開発環境でのみ使用
-- 本番環境では通常のSignUp APIを使用
+- Admin API は開発環境でのみ使用
+- 本番環境では通常の SignUp API を使用
 
 ### パフォーマンス
+
 - 大量ユーザー作成時はバッチ処理を検討
-- レート制限に注意（Admin APIも制限あり）
+- レート制限に注意（Admin API も制限あり）
 
 ### データ整合性
+
 - ユーザー削除時は関連データも削除
 - カスケード削除の設定を確認
 

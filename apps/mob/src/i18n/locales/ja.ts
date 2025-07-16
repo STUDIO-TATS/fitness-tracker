@@ -58,6 +58,7 @@ export default {
     settings: '設定',
     help: 'ヘルプ',
     qrScanner: 'QRスキャナー',
+    notifications: '通知',
   },
 
   // ホーム画面
@@ -66,8 +67,9 @@ export default {
     welcome: 'こんにちは、{{name}}さん',
     todayActivity: '今日のアクティビティ',
     weeklyProgress: '週間進捗',
+    monthlyProgress: '月間進捗',
     quickActions: 'クイックアクション',
-    startWorkout: '新しいワークアウトを記録',
+    startWorkout: 'ワークアウトを開始',
     scanQR: 'QRコードをスキャン',
     viewCalendar: 'カレンダーを見る',
     recentActivities: '最近のアクティビティ',
@@ -77,6 +79,7 @@ export default {
   // ワークアウト
   workout: {
     title: 'ワークアウト',
+    startWorkout: '新規作成',
     selectActivity: 'アクティビティを選択',
     duration: '時間',
     calories: 'カロリー',
@@ -90,6 +93,7 @@ export default {
     moreExercises: 'その他のエクササイズ',
     exercises: 'エクササイズ',
     details: 'ワークアウト詳細',
+    quickStats: 'クイック統計',
     activities: {
       running: 'ランニング',
       walking: 'ウォーキング',
@@ -123,6 +127,7 @@ export default {
     bmi: 'BMI',
     bodyFat: '体脂肪率',
     muscleMass: '筋肉量',
+    bloodPressure: '血圧',
     kg: 'kg',
     cm: 'cm',
     percent: '%',
@@ -249,6 +254,18 @@ export default {
     currentStreak: '現在の連続日数',
     longestStreak: '最長連続日数',
     achievements: '獲得バッジ',
+    phone: '電話番号',
+    birthDate: '生年月日',
+    height: '身長 (cm)',
+    weight: '体重 (kg)',
+    goal: '目標',
+    gender: {
+      label: '性別',
+      male: '男性',
+      female: '女性',
+      other: 'その他',
+      preferNotToSay: '回答しない',
+    },
   },
 
   // エラーメッセージ
@@ -269,5 +286,24 @@ export default {
     workoutRecorded: 'ワークアウトを記録しました',
     goalAchieved: '目標を達成しました！',
     profileUpdated: 'プロフィールを更新しました',
+  },
+
+  // 通知
+  notifications: {
+    title: '通知',
+    unread: '件の未読',
+    noNotifications: '通知がありません',
+    markAllAsRead: 'すべて既読にする',
+    appCompany: 'アプリ制作会社',
+    facility: '利用施設',
+    newFeature: '新機能のお知らせ',
+    maintenance: 'メンテナンス',
+    goalAchieved: '目標達成',
+    classInfo: 'クラス・レッスン情報',
+    appUpdate: 'アプリアップデート',
+    justNow: 'たった今',
+    hoursAgo: '時間前',
+    dayAgo: '日前',
+    quickStats: 'クイック統計',
   },
 };

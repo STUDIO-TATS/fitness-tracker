@@ -49,9 +49,8 @@ export default function PointsScreen() {
 
   const fetchPointsData = async () => {
     if (!session?.user?.id) {
-      // セッションがない場合はモックデータを使用
-      setTotalPoints(2450);
-      setActivities(getMockActivities());
+      setTotalPoints(0);
+      setActivities([]);
       setLoading(false);
       return;
     }
@@ -103,9 +102,8 @@ export default function PointsScreen() {
     } catch (error) {
       console.error('Error fetching points data:', error);
       Alert.alert(t('common.error'), t('common.dataLoadError'));
-      // エラー時はモックデータを使用
-      setTotalPoints(2450);
-      setActivities(getMockActivities());
+      setTotalPoints(0);
+      setActivities([]);
     } finally {
       setLoading(false);
     }
@@ -135,40 +133,6 @@ export default function PointsScreen() {
     }
   };
 
-  const getMockActivities = (): PointActivity[] => [
-    {
-      id: "1",
-      title: "ワークアウト完了",
-      points: 100,
-      date: "2024-01-15",
-      type: "earned",
-      icon: icons.navigation.workout,
-    },
-    {
-      id: "2",
-      title: "週間目標達成",
-      points: 250,
-      date: "2024-01-14",
-      type: "earned",
-      icon: icons.rewards.trophy,
-    },
-    {
-      id: "3",
-      title: "プロテインバー交換",
-      points: -300,
-      date: "2024-01-13",
-      type: "spent",
-      icon: icons.rewards.gift,
-    },
-    {
-      id: "4",
-      title: "体重記録（7日連続）",
-      points: 50,
-      date: "2024-01-12",
-      type: "earned",
-      icon: icons.stats.body,
-    },
-  ];
 
   const rewards = [
     { id: "1", name: "プロテインバー", points: 300, image: "🍫" },
@@ -253,6 +217,12 @@ export default function PointsScreen() {
 
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
+          <Ionicons
+            name={icons.rewards.gift}
+            size={20}
+            color={theme.colors.text.primary}
+            style={styles.sectionIcon}
+          />
           <Text style={styles.sectionTitle}>{t("points.rewards")}</Text>
         </View>
         <FlatList
@@ -273,7 +243,15 @@ export default function PointsScreen() {
 
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t("points.pointHistory")}</Text>
+          <View style={styles.sectionTitleWithIcon}>
+            <Ionicons
+              name="time-outline"
+              size={20}
+              color={theme.colors.text.primary}
+              style={styles.sectionIcon}
+            />
+            <Text style={styles.sectionTitle}>{t("points.pointHistory")}</Text>
+          </View>
           <TouchableOpacity>
             <Text style={styles.viewAllText}>{t("common.viewAll")}</Text>
           </TouchableOpacity>
@@ -348,6 +326,13 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     ...commonStyles.sectionHeader,
+  },
+  sectionTitleWithIcon: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  sectionIcon: {
+    marginRight: spacing.sm,
   },
   sectionTitle: {
     ...commonStyles.sectionTitle,

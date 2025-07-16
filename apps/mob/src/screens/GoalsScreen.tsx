@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,16 +8,24 @@ import {
   Modal,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import ViewShot from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { KeyboardAvoidingWrapper } from "../components/KeyboardAvoidingWrapper";
 import { ScreenWrapper } from "../components/ScreenWrapper";
+import { FloatingActionButton } from "../components/FloatingActionButton";
 import { colors } from "../constants/colors";
 import { icons } from "../constants/icons";
 import { theme } from "../constants/theme";
 import { useI18n } from "../hooks/useI18n";
+import { useAuth } from "../hooks/useAuth";
+import { supabase } from "../lib/supabase";
+import { GoalsStackParamList } from "../navigation/GoalsStackNavigator";
 import {
   commonStyles,
   spacing,
@@ -30,48 +38,60 @@ import {
 interface Goal {
   id: string;
   title: string;
-  target: string;
-  current: number;
-  total: number;
+  description?: string;
+  target_value: number;
+  current_value: number;
   unit: string;
+  category: string;
+  target_date?: string;
   color: string;
+  status: string;
 }
+
+type GoalsNavigationProp = StackNavigationProp<
+  GoalsStackParamList,
+  'GoalsMain'
+>;
 
 export default function GoalsScreen() {
   const { t } = useI18n();
+  const { session } = useAuth();
+  const navigation = useNavigation<GoalsNavigationProp>();
   const viewShotRef = useRef<ViewShot>(null);
-  const [goals, setGoals] = useState<Goal[]>([
-    {
-      id: "1",
-      title: "週3回のワークアウト",
-      target: "今週",
-      current: 2,
-      total: 3,
-      unit: "回",
-      color: colors.primary,
-    },
-    {
-      id: "2",
-      title: "体重を減らす",
-      target: "今月",
-      current: 1.5,
-      total: 3,
-      unit: "kg",
-      color: colors.purple[500],
-    },
-    {
-      id: "3",
-      title: "水分摂取",
-      target: "毎日",
-      current: 1.8,
-      total: 2,
-      unit: "L",
-      color: colors.mint[500],
-    },
-  ]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [loading, setLoading] = useState(true);
   const [shareModalVisible, setShareModalVisible] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+
+  useEffect(() => {
+    fetchGoals();
+  }, [session]);
+
+  const fetchGoals = async () => {
+    if (!session?.user) {
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('goals')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setGoals(data || []);
+    } catch (error) {
+      console.error('Error fetching goals:', error);
+      Alert.alert(t("common.error"), t("common.dataFetchError"));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleShare = async () => {
     try {
@@ -92,8 +112,18 @@ export default function GoalsScreen() {
     setShareModalVisible(true);
   };
 
+  const getCategoryLabel = (category: string) => {
+    const labels: { [key: string]: string } = {
+      'daily': '毎日',
+      'weekly': '今週',
+      'monthly': '今月',
+      'yearly': '今年'
+    };
+    return labels[category] || category;
+  };
+
   const renderGoalItem = ({ item }: { item: Goal }) => {
-    const progress = (item.current / item.total) * 100;
+    const progress = (item.current_value / item.target_value) * 100;
 
     return (
       <TouchableOpacity
@@ -101,8 +131,16 @@ export default function GoalsScreen() {
         onLongPress={() => openShareModal(item)}
       >
         <View style={styles.goalHeader}>
-          <Text style={styles.goalTitle}>{item.title}</Text>
-          <Text style={styles.goalTarget}>{item.target}</Text>
+          <View style={styles.goalTitleWithIcon}>
+            <Ionicons
+              name={icons.navigation.goalsOutline}
+              size={20}
+              color={colors.purple[600]}
+              style={styles.goalIcon}
+            />
+            <Text style={styles.goalTitle}>{item.title}</Text>
+          </View>
+          <Text style={styles.goalTarget}>{getCategoryLabel(item.category)}</Text>
         </View>
 
         <View style={styles.progressContainer}>
@@ -110,12 +148,12 @@ export default function GoalsScreen() {
             <View
               style={[
                 styles.progressFill,
-                { width: `${progress}%`, backgroundColor: item.color },
+                { width: `${Math.min(progress, 100)}%`, backgroundColor: item.color },
               ]}
             />
           </View>
           <Text style={styles.progressText}>
-            {item.current} / {item.total} {item.unit}
+            {item.current_value} / {item.target_value} {item.unit}
           </Text>
         </View>
 
@@ -124,44 +162,47 @@ export default function GoalsScreen() {
     );
   };
 
-  return (
-    <ScreenWrapper backgroundColor={theme.colors.background.tertiary}>
-      <View style={[commonStyles.screenHeader, styles.header]}>
-        <Text
-          style={[
-            commonStyles.screenTitle,
-            { color: theme.colors.text.primary },
-          ]}
-        >
-          {t("navigation.goals")}
-        </Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <LinearGradient
-            colors={theme.colors.gradient.aurora}
-            style={styles.addButtonGradient}
-          >
-            <Ionicons
-              name={icons.status.add}
-              size={24}
-              color={theme.colors.text.inverse}
-            />
-          </LinearGradient>
-        </TouchableOpacity>
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <KeyboardAvoidingWrapper>
+          <ScreenWrapper backgroundColor={theme.colors.background.tertiary}>
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={theme.colors.action.primary} />
+              <Text style={styles.loadingText}>{t("common.loading")}</Text>
+            </View>
+          </ScreenWrapper>
+        </KeyboardAvoidingWrapper>
       </View>
+    );
+  }
 
-      <FlatList
-        data={goals}
-        renderItem={renderGoalItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+  return (
+    <View style={styles.container}>
+      <KeyboardAvoidingWrapper>
+        <ScreenWrapper backgroundColor={theme.colors.background.tertiary} keyboardAvoiding={false} dismissKeyboardOnTap={false}>
+          <FlatList
+            data={goals}
+            renderItem={renderGoalItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            refreshing={loading}
+            onRefresh={fetchGoals}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Ionicons
+                  name={icons.navigation.goalsOutline}
+                  size={64}
+                  color={theme.colors.text.tertiary}
+                />
+                <Text style={styles.emptyText}>{t("goals.noGoals")}</Text>
+              </View>
+            }
+          />
 
       <Modal
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
@@ -225,9 +266,10 @@ export default function GoalsScreen() {
                         style={[
                           styles.shareProgressFill,
                           {
-                            width: `${
-                              (selectedGoal.current / selectedGoal.total) * 100
-                            }%`,
+                            width: `${Math.min(
+                              (selectedGoal.current_value / selectedGoal.target_value) * 100,
+                              100
+                            )}%`,
                             backgroundColor: selectedGoal.color,
                           },
                         ]}
@@ -236,12 +278,12 @@ export default function GoalsScreen() {
                   </View>
                   <Text style={styles.shareProgressText}>
                     {Math.round(
-                      (selectedGoal.current / selectedGoal.total) * 100
+                      (selectedGoal.current_value / selectedGoal.target_value) * 100
                     )}
                     % 完了
                   </Text>
                   <Text style={styles.shareStats}>
-                    {selectedGoal.current} / {selectedGoal.total}{" "}
+                    {selectedGoal.current_value} / {selectedGoal.target_value}{" "}
                     {selectedGoal.unit}
                   </Text>
                 </>
@@ -258,45 +300,56 @@ export default function GoalsScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
-    </ScreenWrapper>
+        </ScreenWrapper>
+      </KeyboardAvoidingWrapper>
+      
+      <FloatingActionButton
+        onPress={() => navigation.navigate('GoalsInput')}
+        text={`${t("goals.title")}を追加`}
+        icon="add"
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    paddingBottom: 0,
-  },
-  screenTitle: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: colors.purple[700],
-  },
-  addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: theme.borderRadius.full,
-    overflow: "hidden",
-  },
-  addButtonGradient: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
+  container: {
+    flex: 1,
+    position: "relative",
   },
   listContent: {
     padding: 20,
     paddingTop: spacing.lg,
     paddingBottom: 100,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    ...typography.body,
+    color: theme.colors.text.secondary,
+    marginTop: spacing.md,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: spacing.xxxl * 2,
+  },
+  emptyText: {
+    ...typography.body,
+    color: theme.colors.text.secondary,
+    marginTop: spacing.md,
+  },
   goalCard: {
     backgroundColor: colors.white,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -308,6 +361,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 12,
+  },
+  goalTitleWithIcon: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  goalIcon: {
+    marginRight: theme.spacing.sm,
   },
   goalTitle: {
     fontSize: 18,

@@ -14,6 +14,7 @@ import SettingsScreen from '../screens/SettingsScreen';
 import HelpScreen from '../screens/HelpScreen';
 import TermsScreen from '../screens/TermsScreen';
 import PrivacyScreen from '../screens/PrivacyScreen';
+import NotificationScreen from '../screens/NotificationScreen';
 import { theme } from '../constants/theme';
 import { useI18n } from '../hooks/useI18n';
 import { TouchableOpacity } from 'react-native';
@@ -38,7 +39,7 @@ export default function RootNavigator() {
           fontWeight: theme.fontWeight.bold,
           fontSize: theme.fontSize.xl,
         },
-        headerBackTitleVisible: false,
+        headerBackTitle: "",
         headerLeft: ({ onPress, canGoBack }) =>
           canGoBack ? (
             <TouchableOpacity
@@ -94,7 +95,7 @@ export default function RootNavigator() {
       />
       <Stack.Screen
         name="FacilityDetail"
-        component={FacilityDetailScreen}
+        component={FacilityDetailScreen as any}
         options={{ title: "施設詳細" }}
       />
       <Stack.Screen
@@ -126,6 +127,11 @@ export default function RootNavigator() {
         name="Privacy"
         component={PrivacyScreen}
         options={{ title: t("settings.privacyPolicy") }}
+      />
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationScreen}
+        options={{ title: t("navigation.notifications") }}
       />
     </Stack.Navigator>
   );

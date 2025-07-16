@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,15 +6,21 @@ import {
   TouchableOpacity,
   FlatList,
   Modal,
-  TextInput,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
 import { ScreenWrapper } from "../components/ScreenWrapper";
+import { FloatingActionButton } from "../components/FloatingActionButton";
 import { colors } from "../constants/colors";
 import { icons } from "../constants/icons";
 import { theme } from "../constants/theme";
 import { useI18n } from "../hooks/useI18n";
+import { useAuth } from "../hooks/useAuth";
+import { supabase } from "../lib/supabase";
+import { WorkoutStackParamList } from "../navigation/WorkoutStackNavigator";
 import {
   commonStyles,
   spacing,
@@ -24,400 +30,441 @@ import {
   shadows,
 } from "../constants/styles";
 
-interface Exercise {
+interface WorkoutExercise {
   id: string;
-  name: string;
+  exercise_name: string;
   sets: number;
   reps: number;
   weight?: number;
+  distance?: number;
+  duration_seconds?: number;
+  notes?: string;
+  order_index: number;
 }
 
 interface Workout {
   id: string;
-  date: string;
   name: string;
-  duration: string;
-  exercises: Exercise[];
-  calories?: number;
+  date: string;
+  duration_minutes: number;
+  calories_burned?: number;
+  notes?: string;
+  workout_exercises?: WorkoutExercise[];
 }
+
+type WorkoutNavigationProp = StackNavigationProp<
+  WorkoutStackParamList,
+  'WorkoutMain'
+>;
 
 export default function WorkoutScreen() {
   const { t } = useI18n();
-  const [workouts] = useState<Workout[]>([
-    {
-      id: "1",
-      date: "2024-01-15",
-      name: "上半身トレーニング",
-      duration: "45分",
-      exercises: [
-        { id: "1", name: "ベンチプレス", sets: 3, reps: 10, weight: 60 },
-        { id: "2", name: "ダンベルフライ", sets: 3, reps: 12, weight: 15 },
-        { id: "3", name: "ショルダープレス", sets: 3, reps: 10, weight: 20 },
-      ],
-      calories: 250,
-    },
-    {
-      id: "2",
-      date: "2024-01-13",
-      name: "有酸素運動",
-      duration: "30分",
-      exercises: [
-        { id: "1", name: "ランニング", sets: 1, reps: 1 },
-        { id: "2", name: "バーピー", sets: 3, reps: 15 },
-      ],
-      calories: 300,
-    },
-  ]);
+  const { session } = useAuth();
+  const navigation = useNavigation<WorkoutNavigationProp>();
   const [modalVisible, setModalVisible] = useState(false);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+
+  useEffect(() => {
+    fetchWorkouts();
+  }, [session]);
+
+  const fetchWorkouts = async () => {
+    if (!session?.user) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('workouts')
+        .select(`
+          *,
+          workout_exercises (*)
+        `)
+        .eq('user_id', session.user.id)
+        .order('date', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      setWorkouts(data || []);
+    } catch (error) {
+      console.error('Error fetching workouts:', error);
+      Alert.alert(t("common.error"), t("common.dataFetchError"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${month}月${day}日`;
+  };
 
   const renderWorkoutItem = ({ item }: { item: Workout }) => (
     <TouchableOpacity
       style={styles.workoutCard}
       onPress={() => {
         setSelectedWorkout(item);
-        setModalVisible(true);
+        setDetailModalVisible(true);
       }}
     >
       <View style={styles.workoutHeader}>
-        <View>
-          <Text style={styles.workoutName}>{item.name}</Text>
-          <Text style={styles.workoutDate}>{item.date}</Text>
-        </View>
-        <View style={styles.workoutStats}>
-          <View style={styles.statItem}>
+        <View style={styles.workoutTitleSection}>
+          <View style={styles.workoutNameRow}>
             <Ionicons
-              name={icons.activity.time}
+              name={icons.navigation.workoutOutline}
+              size={20}
+              color={theme.colors.action.secondary}
+              style={styles.workoutIcon}
+            />
+            <Text style={styles.workoutName}>{item.name}</Text>
+          </View>
+          <View style={styles.workoutDateRow}>
+            <Ionicons
+              name="calendar-outline"
+              size={16}
+              color={colors.gray[500]}
+              style={styles.dateIcon}
+            />
+            <Text style={styles.workoutDate}>{formatDate(item.date)}</Text>
+          </View>
+        </View>
+        <Ionicons
+          name={icons.navigation.forward}
+          size={20}
+          color={theme.colors.text.tertiary}
+        />
+      </View>
+
+      <View style={styles.workoutInfo}>
+        <View style={styles.infoItem}>
+          <Ionicons
+            name={icons.activity.time}
+            size={16}
+            color={theme.colors.text.secondary}
+          />
+          <Text style={styles.infoText}>{item.duration_minutes}分</Text>
+        </View>
+        {item.calories_burned && (
+          <View style={styles.infoItem}>
+            <Ionicons
+              name={icons.misc.flame}
               size={16}
               color={theme.colors.text.secondary}
             />
-            <Text style={styles.statText}>{item.duration}</Text>
+            <Text style={styles.infoText}>{item.calories_burned} kcal</Text>
           </View>
-          {item.calories && (
-            <View style={styles.statItem}>
-              <Ionicons
-                name={icons.misc.flameOutline}
-                size={16}
-                color={theme.colors.action.secondary}
-              />
-              <Text style={styles.statText}>{item.calories} cal</Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      <View style={styles.exerciseList}>
-        {item.exercises.slice(0, 3).map((exercise) => (
-          <Text key={exercise.id} style={styles.exerciseItem}>
-            • {exercise.name} {exercise.sets}x{exercise.reps}
-            {exercise.weight && ` @${exercise.weight}kg`}
-          </Text>
-        ))}
-        {item.exercises.length > 3 && (
-          <Text style={styles.moreExercises}>
-            +{item.exercises.length - 3} {t("workout.moreExercises")}
-          </Text>
+        )}
+        {item.workout_exercises && item.workout_exercises.length > 0 && (
+          <View style={styles.infoItem}>
+            <Ionicons
+              name={icons.misc.listOutline}
+              size={16}
+              color={theme.colors.text.secondary}
+            />
+            <Text style={styles.infoText}>
+              {item.workout_exercises.length}種目
+            </Text>
+          </View>
         )}
       </View>
     </TouchableOpacity>
   );
 
+  const renderExerciseItem = ({ item }: { item: WorkoutExercise }) => (
+    <View style={styles.exerciseItem}>
+      <Text style={styles.exerciseName}>{item.exercise_name}</Text>
+      <Text style={styles.exerciseDetails}>
+        {item.sets}セット × {item.reps}回
+        {item.weight ? ` @ ${item.weight}kg` : ''}
+      </Text>
+      {item.notes && (
+        <Text style={styles.exerciseNotes}>{item.notes}</Text>
+      )}
+    </View>
+  );
+
+  if (loading) {
+    return (
+      <ScreenWrapper backgroundColor={theme.colors.background.tertiary}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.action.primary} />
+          <Text style={styles.loadingText}>{t("common.loading")}</Text>
+        </View>
+      </ScreenWrapper>
+    );
+  }
+
   return (
     <ScreenWrapper backgroundColor={theme.colors.background.tertiary}>
-      <View style={styles.header}>
-        <Text style={styles.screenTitle}>{t("navigation.workout")}</Text>
-        <TouchableOpacity style={styles.addButton}>
-          <LinearGradient
-            colors={theme.colors.gradient.secondary}
-            style={styles.addButtonGradient}
-          >
-            <Ionicons
-              name={icons.status.add}
-              size={24}
-              color={theme.colors.text.inverse}
-            />
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.quickStats}>
-        <View style={styles.quickStatCard}>
-          <LinearGradient
-            colors={theme.colors.gradient.secondary}
-            style={styles.quickStatGradient}
-          >
-            <Ionicons
-              name={icons.navigation.workoutOutline}
-              size={24}
-              color={theme.colors.text.inverse}
-            />
-            <Text style={styles.quickStatValue}>12</Text>
-            <Text style={styles.quickStatLabel}>
-              {t("workout.monthlyCount")}
-            </Text>
-          </LinearGradient>
-        </View>
-        <View style={styles.quickStatCard}>
-          <LinearGradient
-            colors={theme.colors.gradient.aurora}
-            style={styles.quickStatGradient}
-          >
-            <Ionicons
-              name={icons.activity.time}
-              size={24}
-              color={theme.colors.text.inverse}
-            />
-            <Text style={styles.quickStatValue}>5.5</Text>
-            <Text style={styles.quickStatLabel}>
-              {t("workout.weeklyAverage")}
-            </Text>
-          </LinearGradient>
-        </View>
-      </View>
-
       <FlatList
         data={workouts}
         renderItem={renderWorkoutItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshing={loading}
+        onRefresh={fetchWorkouts}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons
+              name={icons.navigation.workoutOutline}
+              size={64}
+              color={theme.colors.text.tertiary}
+            />
+            <Text style={styles.emptyText}>{t("workout.noWorkouts")}</Text>
+          </View>
+        }
       />
 
       <Modal
         animationType="slide"
         transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        visible={detailModalVisible}
+        onRequestClose={() => setDetailModalVisible(false)}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {selectedWorkout?.name || t("workout.title")}
-              </Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color={colors.gray[600]} />
+              <Text style={styles.modalTitle}>{selectedWorkout?.name}</Text>
+              <TouchableOpacity
+                onPress={() => setDetailModalVisible(false)}
+              >
+                <Ionicons
+                  name={icons.status.close}
+                  size={24}
+                  color={theme.colors.text.secondary}
+                />
               </TouchableOpacity>
             </View>
 
-            {selectedWorkout && (
-              <View>
-                <View style={styles.modalStats}>
-                  <Text style={styles.modalStatItem}>
-                    <Ionicons name="calendar" size={16} />{" "}
-                    {selectedWorkout.date}
-                  </Text>
-                  <Text style={styles.modalStatItem}>
-                    <Ionicons name="time" size={16} />{" "}
-                    {selectedWorkout.duration}
-                  </Text>
-                  {selectedWorkout.calories && (
-                    <Text style={styles.modalStatItem}>
-                      <Ionicons name="flame" size={16} />{" "}
-                      {selectedWorkout.calories} cal
-                    </Text>
-                  )}
-                </View>
-
-                <Text style={styles.exerciseListTitle}>
-                  {t("workout.exercises")}
+            <View style={styles.workoutDetailInfo}>
+              <View style={styles.detailInfoItem}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={20}
+                  color={theme.colors.text.secondary}
+                />
+                <Text style={styles.detailInfoText}>
+                  {selectedWorkout && formatDate(selectedWorkout.date)}
                 </Text>
-                {selectedWorkout.exercises.map((exercise) => (
-                  <View key={exercise.id} style={styles.modalExerciseItem}>
-                    <Text style={styles.modalExerciseName}>
-                      {exercise.name}
-                    </Text>
-                    <Text style={styles.modalExerciseDetails}>
-                      {exercise.sets} {t("workout.sets")} × {exercise.reps}{" "}
-                      {t("workout.reps")}
-                      {exercise.weight && ` @ ${exercise.weight}kg`}
-                    </Text>
-                  </View>
-                ))}
+              </View>
+              <View style={styles.detailInfoItem}>
+                <Ionicons
+                  name={icons.activity.time}
+                  size={20}
+                  color={theme.colors.text.secondary}
+                />
+                <Text style={styles.detailInfoText}>
+                  {selectedWorkout?.duration_minutes}分
+                </Text>
+              </View>
+              {selectedWorkout?.calories_burned && (
+                <View style={styles.detailInfoItem}>
+                  <Ionicons
+                    name={icons.misc.flame}
+                    size={20}
+                    color={theme.colors.text.secondary}
+                  />
+                  <Text style={styles.detailInfoText}>
+                    {selectedWorkout.calories_burned} kcal
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {selectedWorkout?.notes && (
+              <View style={styles.notesSection}>
+                <Text style={styles.notesSectionTitle}>メモ</Text>
+                <Text style={styles.notesText}>{selectedWorkout.notes}</Text>
               </View>
             )}
 
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.closeButtonText}>{t("common.close")}</Text>
-            </TouchableOpacity>
+            <Text style={styles.exerciseSectionTitle}>エクササイズ</Text>
+            <FlatList
+              data={selectedWorkout?.workout_exercises?.sort((a, b) => a.order_index - b.order_index)}
+              renderItem={renderExerciseItem}
+              keyExtractor={(item) => item.id}
+              style={styles.exerciseList}
+            />
           </View>
         </View>
       </Modal>
+
+      <FloatingActionButton
+        onPress={() => navigation.navigate('WorkoutInput')}
+        text={t("workout.startWorkout")}
+        icon="add"
+      />
     </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    ...commonStyles.screenHeader,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  listContent: {
+    padding: layout.screenPadding,
+    paddingBottom: 100,
   },
-  screenTitle: {
-    ...commonStyles.screenTitle,
-    color: theme.colors.text.primary,
-  },
-  addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: theme.borderRadius.full,
-    overflow: "hidden",
-  },
-  addButtonGradient: {
-    width: "100%",
-    height: "100%",
+  loadingContainer: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  quickStats: {
-    flexDirection: "row",
-    paddingHorizontal: layout.screenPadding,
-    gap: spacing.md,
+  loadingText: {
+    ...typography.body,
+    color: theme.colors.text.secondary,
+    marginTop: spacing.md,
   },
-  quickStatCard: {
+  emptyContainer: {
     flex: 1,
-    borderRadius: theme.borderRadius.xl,
-    overflow: "hidden",
-    marginBottom: 0,
-    ...theme.shadows.md,
-  },
-  quickStatGradient: {
-    padding: theme.spacing.lg,
+    justifyContent: "center",
     alignItems: "center",
+    paddingVertical: spacing.xxl * 2,
   },
-  quickStatValue: {
-    fontSize: 28,
-    fontWeight: theme.fontWeight.bold,
-    color: theme.colors.text.inverse,
-    marginVertical: theme.spacing.sm,
-    fontFamily: theme.fontFamily.bold,
-  },
-  quickStatLabel: {
-    ...typography.caption,
-    color: theme.colors.text.inverse,
-    marginTop: theme.spacing.xs,
-    textAlign: "center",
-    fontWeight: theme.fontWeight.medium,
-  },
-  listContent: {
-    paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.lg,
-    paddingBottom: 100,
+  emptyText: {
+    ...typography.body,
+    color: theme.colors.text.secondary,
+    marginTop: spacing.md,
   },
   workoutCard: {
-    ...commonStyles.card,
-    borderRadius: borderRadius.lg,
-    padding: layout.screenPadding,
-    marginBottom: spacing.lg,
-    ...shadows.md,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+    ...theme.shadows.sm,
   },
   workoutHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: spacing.md,
+    alignItems: "center",
+    marginBottom: theme.spacing.md,
+  },
+  workoutTitleSection: {
+    flex: 1,
+  },
+  workoutNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: theme.spacing.xs,
+  },
+  workoutIcon: {
+    marginRight: theme.spacing.sm,
   },
   workoutName: {
     ...typography.cardTitle,
-    color: colors.gray[900],
+    color: theme.colors.text.primary,
+  },
+  workoutDateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  dateIcon: {
+    marginRight: theme.spacing.xs,
   },
   workoutDate: {
     ...typography.small,
-    color: colors.gray[500],
-    marginTop: spacing.xs,
+    color: theme.colors.text.secondary,
   },
-  workoutStats: {
-    alignItems: "flex-end",
+  workoutInfo: {
+    flexDirection: "row",
+    gap: theme.spacing.lg,
   },
-  statItem: {
+  infoItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.xs,
-    marginBottom: spacing.xs,
+    gap: theme.spacing.xs,
   },
-  statText: {
+  infoText: {
     ...typography.small,
-    color: colors.gray[600],
-  },
-  exerciseList: {
-    borderTopWidth: 1,
-    borderTopColor: colors.gray[200],
-    paddingTop: spacing.md,
-  },
-  exerciseItem: {
-    ...typography.small,
-    color: colors.gray[700],
-    marginBottom: spacing.xs,
-  },
-  moreExercises: {
-    ...typography.small,
-    color: colors.purple[600],
-    fontStyle: "italic",
-    marginTop: spacing.xs,
+    color: theme.colors.text.secondary,
   },
   modalContainer: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-end",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    padding: layout.screenPadding,
   },
   modalContent: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.xl,
-    padding: layout.screenPadding,
+    backgroundColor: theme.colors.background.primary,
+    borderTopLeftRadius: theme.borderRadius.xl,
+    borderTopRightRadius: theme.borderRadius.xl,
+    padding: theme.spacing.xl,
+    paddingBottom: theme.spacing.xxl,
     maxHeight: "80%",
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: layout.screenPadding,
+    marginBottom: theme.spacing.xl,
   },
   modalTitle: {
-    ...typography.sectionTitle,
-    color: colors.gray[900],
+    ...typography.screenTitle,
+    color: theme.colors.text.primary,
   },
-  modalStats: {
+  workoutDetailInfo: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: spacing.lg,
-    marginBottom: layout.screenPadding,
+    gap: theme.spacing.lg,
+    marginBottom: theme.spacing.xl,
   },
-  modalStatItem: {
-    ...typography.small,
-    color: colors.gray[600],
+  detailInfoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.sm,
   },
-  exerciseListTitle: {
-    ...typography.cardTitle,
-    color: colors.gray[900],
-    marginBottom: spacing.md,
-  },
-  modalExerciseItem: {
-    backgroundColor: colors.gray[50],
-    borderRadius: borderRadius.sm,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  modalExerciseName: {
+  detailInfoText: {
     ...typography.body,
-    fontWeight: "500",
-    color: colors.gray[900],
+    color: theme.colors.text.primary,
   },
-  modalExerciseDetails: {
+  notesSection: {
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.xl,
+  },
+  notesSectionTitle: {
     ...typography.small,
-    color: colors.gray[600],
-    marginTop: spacing.xs,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.xs,
   },
-  closeButton: {
-    ...commonStyles.primaryButton,
-    borderRadius: borderRadius.sm,
-    padding: spacing.lg,
-    marginTop: layout.screenPadding,
+  notesText: {
+    ...typography.body,
+    color: theme.colors.text.primary,
   },
-  closeButtonText: {
-    ...commonStyles.primaryButtonText,
+  exerciseSectionTitle: {
+    ...typography.sectionTitle,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.md,
+  },
+  exerciseList: {
+    maxHeight: 300,
+  },
+  exerciseItem: {
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+  },
+  exerciseName: {
+    ...typography.body,
+    color: theme.colors.text.primary,
+    fontWeight: theme.fontWeight.semibold,
+    marginBottom: theme.spacing.xs,
+  },
+  exerciseDetails: {
+    ...typography.small,
+    color: theme.colors.text.secondary,
+  },
+  exerciseNotes: {
+    ...typography.small,
+    color: theme.colors.text.tertiary,
+    marginTop: theme.spacing.xs,
+    fontStyle: "italic",
   },
 });

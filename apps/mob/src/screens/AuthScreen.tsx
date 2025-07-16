@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { colors } from '../constants/colors';
-import { testUsers } from '../constants/testUsers';
 import { useI18n } from '../hooks/useI18n';
 
 export default function AuthScreen() {
@@ -46,8 +45,6 @@ export default function AuthScreen() {
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      console.error('Email:', email);
-      console.error('Password:', password);
       Alert.alert(
         'ログインエラー', 
         error.message || '認証に失敗しました。メールアドレスとパスワードを確認してください。'
@@ -57,11 +54,6 @@ export default function AuthScreen() {
     }
   };
 
-  const selectTestUser = (user: typeof testUsers[0]) => {
-    setEmail(user.email);
-    setPassword(user.password);
-    setIsSignUp(false);
-  };
 
   return (
     <KeyboardAvoidingView 
@@ -77,23 +69,6 @@ export default function AuthScreen() {
           <Text style={styles.subtitle}>
             {isSignUp ? '新規登録' : 'ログイン'}
           </Text>
-
-          {!isSignUp && (
-            <View style={styles.testUsersSection}>
-              <Text style={styles.sectionTitle}>テストユーザーを選択</Text>
-              {testUsers.map((user) => (
-                <TouchableOpacity
-                  key={user.email}
-                  style={styles.userButton}
-                  onPress={() => selectTestUser(user)}
-                >
-                  <Text style={styles.userButtonText}>{user.displayName}</Text>
-                  <Text style={styles.userEmailText}>{user.email}</Text>
-                </TouchableOpacity>
-              ))}
-              <View style={styles.divider} />
-            </View>
-          )}
 
           <TextInput
           style={styles.input}
@@ -155,38 +130,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
     paddingVertical: 40,
-  },
-  testUsersSection: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.gray[700],
-    marginBottom: 12,
-  },
-  userButton: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.purple[200],
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-  },
-  userButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.purple[700],
-  },
-  userEmailText: {
-    fontSize: 14,
-    color: colors.gray[600],
-    marginTop: 2,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.gray[200],
-    marginVertical: 20,
   },
   title: {
     fontSize: 36,

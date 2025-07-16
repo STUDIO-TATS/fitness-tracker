@@ -20,6 +20,9 @@ export type ActivityLog = Tables<'activity_logs'>;
 export type PointTransaction = Tables<'point_transactions'>;
 export type Measurement = Tables<'measurements'>;
 export type Goal = Tables<'goals'>;
+export type Workout = Tables<'workouts'>;
+export type WorkoutExercise = Tables<'workout_exercises'>;
+export type Notification = Tables<'notifications'>;
 
 // Join型の定義
 export type FacilityWithCompany = Facility & {
@@ -33,6 +36,10 @@ export type ActivityLogWithDetails = ActivityLog & {
 
 export type UserMembershipWithCompany = UserMembership & {
   companies: Company;
+};
+
+export type WorkoutWithExercises = Workout & {
+  workout_exercises: WorkoutExercise[];
 };
 
 // ビュー型の定義

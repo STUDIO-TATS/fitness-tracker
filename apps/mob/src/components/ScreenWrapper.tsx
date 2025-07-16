@@ -23,6 +23,7 @@ interface ScreenWrapperProps {
   style?: ViewStyle;
   keyboardAvoiding?: boolean;
   dismissKeyboardOnTap?: boolean;
+  refreshControl?: React.ReactElement;
 }
 
 export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
@@ -35,6 +36,7 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
   style,
   keyboardAvoiding = true,
   dismissKeyboardOnTap = true,
+  refreshControl,
 }) => {
   const contentPadding = noPadding ? 0 : layout.screenPadding;
   
@@ -51,9 +53,9 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
       bounces={true}
       alwaysBounceVertical={true}
       refreshControl={
-        onRefresh ? (
+        refreshControl || (onRefresh ? (
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        ) : undefined
+        ) : undefined)
       }
     >
       {dismissKeyboardOnTap ? (

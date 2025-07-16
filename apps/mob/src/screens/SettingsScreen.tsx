@@ -257,7 +257,7 @@ export default function SettingsScreen() {
       <Modal
         visible={languageModalVisible}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setLanguageModalVisible(false)}
       >
         <TouchableOpacity

@@ -43,8 +43,6 @@ export default function CalendarScreen() {
   useEffect(() => {
     if (session?.user?.id) {
       fetchActivities();
-    } else {
-      generateMockData();
     }
   }, [currentDate, session]);
 
@@ -58,26 +56,48 @@ export default function CalendarScreen() {
       const startDate = new Date(year, month, 1);
       const endDate = new Date(year, month + 1, 0);
       
-      // Supabaseからアクティビティログを取得
-      const { data: activities, error } = await supabase
-        .from('activity_logs')
-        .select(`
-          *,
-          facilities (name, facility_type),
-          activity_types (name, category)
-        `)
-        .eq('user_id', session?.user?.id)
-        .gte('check_in_time', startDate.toISOString())
-        .lte('check_in_time', endDate.toISOString())
-        .order('check_in_time', { ascending: true });
+      // Supabaseからアクティビティログとワークアウトデータを取得
+      const [activitiesResult, workoutsResult] = await Promise.all([
+        // アクティビティログ（施設でのチェックイン）
+        supabase
+          .from('activity_logs')
+          .select(`
+            *,
+            facilities (name, facility_type),
+            activity_types (name, category)
+          `)
+          .eq('user_id', session?.user?.id)
+          .gte('check_in_time', startDate.toISOString())
+          .lte('check_in_time', endDate.toISOString())
+          .order('check_in_time', { ascending: true }),
+        
+        // ワークアウト（個人記録）
+        supabase
+          .from('workouts')
+          .select(`
+            *,
+            workout_exercises (
+              exercise_name,
+              sets,
+              reps,
+              weight
+            )
+          `)
+          .eq('user_id', session?.user?.id)
+          .gte('date', startDate.toISOString().split('T')[0])
+          .lte('date', endDate.toISOString().split('T')[0])
+          .order('date', { ascending: true })
+      ]);
 
-      if (error) throw error;
+      if (activitiesResult.error) throw activitiesResult.error;
+      if (workoutsResult.error) throw workoutsResult.error;
 
       // データを日付ごとにグループ化
       const groupedData: { [key: string]: DayActivity } = {};
       
-      if (activities) {
-        activities.forEach(activity => {
+      // アクティビティログの処理
+      if (activitiesResult.data) {
+        activitiesResult.data.forEach(activity => {
           const date = new Date(activity.check_in_time);
           const dateKey = formatDateKey(date);
           
@@ -109,72 +129,46 @@ export default function CalendarScreen() {
         });
       }
       
+      // ワークアウトデータの処理
+      if (workoutsResult.data) {
+        workoutsResult.data.forEach(workout => {
+          const dateKey = workout.date;
+          
+          if (!groupedData[dateKey]) {
+            groupedData[dateKey] = {
+              date: dateKey,
+              activities: [],
+              totalDuration: 0,
+              totalCalories: 0,
+            };
+          }
+          
+          const workoutData: Activity = {
+            id: workout.id,
+            type: workout.name,
+            duration: workout.duration_minutes || 0,
+            facility: 'ホームワークアウト',
+            calories: workout.calories_burned || 0,
+            notes: workout.notes,
+            time: '00:00', // ワークアウトには時刻情報がないため
+          };
+          
+          groupedData[dateKey].activities.push(workoutData);
+          groupedData[dateKey].totalDuration += workoutData.duration;
+          groupedData[dateKey].totalCalories += workoutData.calories;
+        });
+      }
+      
       setActivitiesData(groupedData);
     } catch (error) {
       console.error('Error fetching activities:', error);
-      generateMockData();
+      // エラー時は空のデータを設定
+      setActivitiesData({});
     } finally {
       setLoading(false);
     }
   };
 
-  const generateMockData = () => {
-    const data: { [key: string]: DayActivity } = {};
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    
-    // モックデータの生成
-    const mockActivities = [
-      { type: 'ランニング', facility: '秋川体育館', duration: 45, calories: 320 },
-      { type: '筋力トレーニング', facility: 'フィットネスワールド渋谷店', duration: 60, calories: 280 },
-      { type: '水泳', facility: 'あきる野市民プール', duration: 30, calories: 240 },
-      { type: 'ヨガ', facility: 'ヘルシーライフ青山スタジオ', duration: 75, calories: 180 },
-      { type: 'バスケットボール', facility: '秋川体育館', duration: 90, calories: 450 },
-      { type: 'エアロビクス', facility: '五日市ファインプラザ', duration: 50, calories: 300 },
-    ];
-
-    // ランダムにアクティビティを配置
-    for (let day = 1; day <= 31; day++) {
-      const date = new Date(year, month, day);
-      if (date.getMonth() === month && Math.random() > 0.7) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        
-        const numActivities = Math.floor(Math.random() * 3) + 1;
-        const dayActivities: Activity[] = [];
-        let totalDuration = 0;
-        let totalCalories = 0;
-
-        for (let i = 0; i < numActivities; i++) {
-          const activity = mockActivities[Math.floor(Math.random() * mockActivities.length)];
-          const time = `${String(9 + Math.floor(Math.random() * 12)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`;
-          
-          const activityData: Activity = {
-            id: `${dateStr}-${i}`,
-            type: activity.type,
-            duration: activity.duration + Math.floor(Math.random() * 20) - 10,
-            facility: activity.facility,
-            calories: activity.calories + Math.floor(Math.random() * 50) - 25,
-            time: time,
-            notes: Math.random() > 0.7 ? '良いワークアウトでした！' : undefined,
-          };
-
-          dayActivities.push(activityData);
-          totalDuration += activityData.duration;
-          totalCalories += activityData.calories;
-        }
-
-        data[dateStr] = {
-          date: dateStr,
-          activities: dayActivities,
-          totalDuration,
-          totalCalories,
-        };
-      }
-    }
-
-    setActivitiesData(data);
-    setLoading(false);
-  };
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -236,21 +230,26 @@ export default function CalendarScreen() {
   };
 
   const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'ランニング':
-        return 'walk';
-      case '筋力トレーニング':
-        return 'barbell';
-      case '水泳':
-        return 'water';
-      case 'ヨガ':
-        return 'flower';
-      case 'バスケットボール':
-        return 'basketball';
-      case 'エアロビクス':
-        return 'fitness';
-      default:
-        return 'fitness';
+    const lowerType = type.toLowerCase();
+    
+    if (lowerType.includes('ランニング') || lowerType.includes('running') || lowerType.includes('ジョギング')) {
+      return 'walk';
+    } else if (lowerType.includes('筋トレ') || lowerType.includes('トレーニング') || lowerType.includes('training') || lowerType.includes('ウェイト')) {
+      return 'barbell';
+    } else if (lowerType.includes('水泳') || lowerType.includes('プール') || lowerType.includes('swimming')) {
+      return 'water';
+    } else if (lowerType.includes('ヨガ') || lowerType.includes('yoga') || lowerType.includes('ピラティス')) {
+      return 'flower';
+    } else if (lowerType.includes('バスケ') || lowerType.includes('basketball')) {
+      return 'basketball';
+    } else if (lowerType.includes('サイクリング') || lowerType.includes('自転車') || lowerType.includes('cycling')) {
+      return 'bicycle';
+    } else if (lowerType.includes('ウォーキング') || lowerType.includes('walking') || lowerType.includes('散歩')) {
+      return 'walk-outline';
+    } else if (lowerType.includes('ダンス') || lowerType.includes('エアロ') || lowerType.includes('dance')) {
+      return 'musical-notes';
+    } else {
+      return 'fitness';
     }
   };
 
@@ -364,6 +363,19 @@ export default function CalendarScreen() {
 
   const selectedDayData = selectedDate ? activitiesData[selectedDate] : null;
 
+  if (loading && Object.keys(activitiesData).length === 0) {
+    return (
+      <ScreenWrapper backgroundColor={theme.colors.background.tertiary}>
+        <View style={styles.loadingContainer}>
+          <View style={styles.loadingContent}>
+            <Ionicons name="calendar" size={48} color={colors.purple[300]} />
+            <Text style={styles.loadingText}>カレンダーを読み込み中...</Text>
+          </View>
+        </View>
+      </ScreenWrapper>
+    );
+  }
+
   return (
     <ScreenWrapper backgroundColor={theme.colors.background.tertiary} scrollable>
       {/* 月ナビゲーション */}
@@ -434,7 +446,7 @@ export default function CalendarScreen() {
 
       {/* アクティビティ詳細モーダル */}
       <Modal
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
@@ -737,5 +749,18 @@ const styles = StyleSheet.create({
     ...typography.small,
     color: colors.gray[700],
     fontStyle: 'italic',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingContent: {
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  loadingText: {
+    ...typography.body,
+    color: colors.gray[600],
   },
 });

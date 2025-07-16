@@ -20,6 +20,7 @@ export type RootDrawerParamList = {
   Help: undefined;
   Terms: undefined;
   Privacy: undefined;
+  Notifications: undefined;
 };
 
 export type RootTabParamList = {
