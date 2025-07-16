@@ -16,10 +16,11 @@ import { useI18n } from '../hooks/useI18n';
 
 // Development test users
 const DEV_USERS = [
-  { email: 'admin@example.com', password: 'adminpassword123', name: '管理者' },
-  { email: 'user1@example.com', password: 'password123', name: 'ユーザー1' },
-  { email: 'user2@example.com', password: 'password123', name: 'ユーザー2' },
-  { email: 'premium@example.com', password: 'password123', name: 'プレミアム会員' },
+  { email: 'admin@fittracker.com', password: 'testpass123', name: 'システム管理者' },
+  { email: 'staff@fittracker.com', password: 'testpass123', name: 'スタッフ太郎' },
+  { email: 'user1@example.com', password: 'testpass123', name: '田中太郎' },
+  { email: 'user2@example.com', password: 'testpass123', name: '鈴木花子' },
+  { email: 'user3@example.com', password: 'testpass123', name: '佐藤次郎' },
 ];
 
 export default function AuthScreen() {
