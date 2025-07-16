@@ -29,6 +29,8 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showGuestNameInput, setShowGuestNameInput] = useState(false);
+  const [guestName, setGuestName] = useState('');
   const isDev = __DEV__; // React Native's development flag
 
   const handleAuth = async () => {
@@ -67,6 +69,43 @@ export default function AuthScreen() {
   const handleDevUserSelect = (devEmail: string, devPassword: string) => {
     setEmail(devEmail);
     setPassword(devPassword);
+  };
+
+  const handleContinueAsGuest = async () => {
+    setIsLoading(true);
+    try {
+      // Supabaseの匿名認証を使用
+      const { data, error } = await supabase.auth.signInAnonymously();
+      
+      if (error) throw error;
+      
+      // 匿名ユーザーのプロフィールを作成/更新
+      if (data.user) {
+        const displayName = guestName.trim() || 'ゲストユーザー';
+        
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .upsert({
+            user_id: data.user.id,
+            display_name: displayName,
+            preferences: {
+              isAnonymous: true,
+              createdAt: new Date().toISOString(),
+            },
+          }, {
+            onConflict: 'user_id',
+          });
+          
+        if (profileError) {
+          console.error('Error creating guest profile:', profileError);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error continuing as guest:', error);
+      Alert.alert('エラー', error.message || 'ゲストモードの開始に失敗しました');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -125,6 +164,57 @@ export default function AuthScreen() {
               : 'アカウントをお持ちでない方はこちら'}
           </Text>
         </TouchableOpacity>
+
+        {/* Guest mode option */}
+        <View style={styles.dividerContainer}>
+          <View style={styles.divider} />
+          <Text style={styles.dividerText}>または</Text>
+          <View style={styles.divider} />
+        </View>
+
+        {!showGuestNameInput ? (
+          <TouchableOpacity
+            style={[styles.guestButton, isLoading && styles.buttonDisabled]}
+            onPress={() => setShowGuestNameInput(true)}
+            disabled={isLoading}
+          >
+            <Text style={styles.guestButtonText}>ゲストとして続ける</Text>
+            <Text style={styles.guestButtonSubtext}>登録不要・データは端末に保存</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.guestNameContainer}>
+            <Text style={styles.guestNameLabel}>お名前（任意）</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="ゲストユーザー"
+              placeholderTextColor={colors.gray[400]}
+              value={guestName}
+              onChangeText={setGuestName}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <View style={styles.guestButtonRow}>
+              <TouchableOpacity
+                style={[styles.guestCancelButton]}
+                onPress={() => {
+                  setShowGuestNameInput(false);
+                  setGuestName('');
+                }}
+              >
+                <Text style={styles.guestCancelButtonText}>キャンセル</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.guestConfirmButton, isLoading && styles.buttonDisabled]}
+                onPress={handleContinueAsGuest}
+                disabled={isLoading}
+              >
+                <Text style={styles.guestConfirmButtonText}>
+                  {isLoading ? '処理中...' : '開始'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Development only: Test user selection */}
         {isDev && !isSignUp && (
@@ -256,5 +346,80 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     fontStyle: 'italic',
+  },
+  // Guest mode styles
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.gray[300],
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: colors.gray[500],
+    fontSize: 14,
+  },
+  guestButton: {
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.purple[400],
+    borderRadius: 8,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  guestButtonText: {
+    color: colors.purple[600],
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  guestButtonSubtext: {
+    color: colors.gray[600],
+    fontSize: 12,
+    marginTop: 4,
+  },
+  guestNameContainer: {
+    backgroundColor: colors.white,
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+  },
+  guestNameLabel: {
+    fontSize: 14,
+    color: colors.gray[700],
+    marginBottom: 8,
+  },
+  guestButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  guestCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: colors.gray[100],
+    borderRadius: 8,
+  },
+  guestCancelButtonText: {
+    color: colors.gray[700],
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  guestConfirmButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: colors.purple[600],
+    borderRadius: 8,
+  },
+  guestConfirmButtonText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

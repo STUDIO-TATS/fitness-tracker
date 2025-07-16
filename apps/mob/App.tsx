@@ -18,9 +18,12 @@ export default function App() {
     return <LoadingScreen />;
   }
 
+  // Show main app for any authenticated user (including anonymous)
+  const showMainApp = !!session;
+
   return (
     <NavigationContainer>
-      {session ? <RootNavigator /> : <AuthScreen />}
+      {showMainApp ? <RootNavigator /> : <AuthScreen />}
       <StatusBar style="light" />
     </NavigationContainer>
   );

@@ -24,9 +24,13 @@ interface ProfileData {
 }
 
 export default function ProfileScreen() {
-  const { session } = useAuth();
+  const { session, isGuest, convertToRegularUser } = useAuth();
   const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
+  const [showAccountCreation, setShowAccountCreation] = useState(false);
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [signupLoading, setSignupLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [originalData, setOriginalData] = useState<ProfileData | null>(null);
@@ -217,6 +221,27 @@ export default function ProfileScreen() {
     return option ? option.label : value;
   };
 
+  const handleCreateAccount = async () => {
+    if (!signupEmail.trim() || signupPassword.length < 6) {
+      Alert.alert('エラー', '有効なメールアドレスと6文字以上のパスワードを入力してください');
+      return;
+    }
+
+    setSignupLoading(true);
+    try {
+      await convertToRegularUser(signupEmail.trim(), signupPassword);
+      setShowAccountCreation(false);
+      setSignupEmail('');
+      setSignupPassword('');
+      Alert.alert('成功', 'アカウントが作成されました！データは安全に保持されます。');
+    } catch (error: any) {
+      console.error('Error creating account:', error);
+      Alert.alert('エラー', error.message || 'アカウントの作成に失敗しました');
+    } finally {
+      setSignupLoading(false);
+    }
+  };
+
   const renderField = (label: string, field: string, icon: string, multiline: boolean = false, keyboardType: 'default' | 'numeric' | 'phone-pad' = 'default', inputType: 'text' | 'date' | 'gender' = 'text') => {
     let value = '';
     if (field.includes('.')) {
@@ -351,7 +376,27 @@ export default function ProfileScreen() {
           )}
         </View>
         
-        <Text style={styles.email}>{session?.user?.email}</Text>
+        <Text style={styles.email}>
+          {isGuest ? 'ゲストユーザー' : session?.user?.email}
+        </Text>
+        
+        {/* ゲストユーザー向けアカウント作成セクション */}
+        {isGuest && (
+          <View style={styles.guestBanner}>
+            <View style={styles.guestBannerContent}>
+              <Ionicons name="information-circle-outline" size={20} color={colors.purple[600]} />
+              <Text style={styles.guestBannerText}>
+                アカウントを作成してデータを保持しませんか？
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.createAccountButton}
+              onPress={() => setShowAccountCreation(true)}
+            >
+              <Text style={styles.createAccountButtonText}>アカウント作成</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <View style={styles.fieldsContainer}>
@@ -392,9 +437,67 @@ export default function ProfileScreen() {
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color={colors.white} />
-          <Text style={styles.logoutText}>ログアウト</Text>
+          <Text style={styles.logoutText}>{isGuest ? 'ゲストモード終了' : 'ログアウト'}</Text>
         </TouchableOpacity>
       </ScreenWrapper>
+
+      {/* アカウント作成モーダル */}
+      <Modal
+        visible={showAccountCreation}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowAccountCreation(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              onPress={() => setShowAccountCreation(false)}
+              style={styles.modalCloseButton}
+            >
+              <Ionicons name="close" size={24} color={colors.gray[600]} />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>アカウント作成</Text>
+            <View style={{ width: 40 }} />
+          </View>
+          
+          <View style={styles.modalContent}>
+            <Text style={styles.modalDescription}>
+              アカウントを作成すると、現在のデータが保持され、他のデバイスからもアクセスできるようになります。
+            </Text>
+            
+            <TextInput
+              style={styles.modalInput}
+              placeholder="メールアドレス"
+              placeholderTextColor={colors.gray[400]}
+              value={signupEmail}
+              onChangeText={setSignupEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            
+            <TextInput
+              style={styles.modalInput}
+              placeholder="パスワード（6文字以上）"
+              placeholderTextColor={colors.gray[400]}
+              value={signupPassword}
+              onChangeText={setSignupPassword}
+              secureTextEntry
+              autoCapitalize="none"
+            />
+            
+            <TouchableOpacity
+              style={[styles.modalButton, signupLoading && styles.buttonDisabled]}
+              onPress={handleCreateAccount}
+              disabled={signupLoading || !signupEmail.trim() || signupPassword.length < 6}
+            >
+              <Text style={styles.modalButtonText}>
+                {signupLoading ? '作成中...' : 'アカウント作成'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <View style={styles.bottomActions}>
         {!isEditing ? (
@@ -700,15 +803,11 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.white,
   },
   modalContent: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: borderRadius.xl,
-    borderTopRightRadius: borderRadius.xl,
-    paddingBottom: spacing.xl,
-    ...shadows.lg,
+    flex: 1,
+    padding: 20,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -757,5 +856,64 @@ const styles = StyleSheet.create({
   genderOptionTextSelected: {
     color: colors.purple[700],
     fontWeight: '600',
+  },
+  // Guest mode styles
+  guestBanner: {
+    backgroundColor: colors.purple[50],
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: colors.purple[200],
+  },
+  guestBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  guestBannerText: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 14,
+    color: colors.purple[700],
+    lineHeight: 20,
+  },
+  createAccountButton: {
+    backgroundColor: colors.purple[600],
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  createAccountButtonText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalDescription: {
+    fontSize: 16,
+    color: colors.gray[600],
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  modalInput: {
+    backgroundColor: colors.gray[50],
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 16,
+    fontSize: 16,
+    color: colors.gray[900],
+  },
+  modalCloseButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
 });
