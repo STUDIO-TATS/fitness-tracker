@@ -193,13 +193,9 @@ export default function SettingsScreen() {
 
   return (
     <ScreenWrapper backgroundColor={colors.gray[50]} scrollable>
-      <View style={styles.header}>
-        <Text style={styles.screenTitle}>{t("settings.title")}</Text>
-      </View>
-
       <ScrollView showsVerticalScrollIndicator={false}>
         {settingSections.map((section, sectionIndex) => (
-          <View key={sectionIndex} style={styles.section}>
+          <View key={sectionIndex} style={[styles.section, sectionIndex === 0 && { marginTop: spacing.lg }]}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
             <View style={styles.sectionContent}>
               {section.items.map((item, itemIndex) => (

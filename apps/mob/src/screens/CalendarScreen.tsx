@@ -366,11 +366,6 @@ export default function CalendarScreen() {
 
   return (
     <ScreenWrapper backgroundColor={theme.colors.background.tertiary} scrollable>
-      {/* ヘッダー */}
-      <View style={styles.header}>
-        <Text style={styles.screenTitle}>アクティビティカレンダー</Text>
-      </View>
-
       {/* 月ナビゲーション */}
       <View style={styles.monthNavigation}>
         <TouchableOpacity
@@ -509,6 +504,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: layout.screenPadding,
+    marginTop: spacing.lg,
     marginBottom: spacing.lg,
   },
   navButton: {

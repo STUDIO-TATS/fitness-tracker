@@ -247,7 +247,6 @@ export default function FacilitiesScreen() {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.screenTitle}>{t("facilities.title")}</Text>
             <TouchableOpacity style={styles.filterButton}>
               <LinearGradient
                 colors={theme.colors.gradient.primary}
@@ -291,9 +290,10 @@ export default function FacilitiesScreen() {
 const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "center",
     padding: layout.screenPadding,
+    paddingTop: theme.spacing.lg,
     paddingBottom: theme.spacing.md,
   },
   screenTitle: {

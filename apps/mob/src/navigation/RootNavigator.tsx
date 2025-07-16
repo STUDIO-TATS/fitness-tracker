@@ -95,7 +95,7 @@ export default function RootNavigator() {
       <Stack.Screen
         name="FacilityDetail"
         component={FacilityDetailScreen}
-        options={{ title: t("facilities.details") }}
+        options={{ title: "施設詳細" }}
       />
       <Stack.Screen
         name="Membership"

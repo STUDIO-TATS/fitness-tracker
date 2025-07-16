@@ -219,10 +219,6 @@ export default function PointsScreen() {
       backgroundColor={theme.colors.background.tertiary}
       scrollable
     >
-      <View style={styles.header}>
-        <Text style={styles.screenTitle}>{t("navigation.points")}</Text>
-      </View>
-
       {loading ? (
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>{t('common.loading')}</Text>
@@ -304,6 +300,7 @@ const styles = StyleSheet.create({
   },
   pointsCard: {
     marginHorizontal: layout.screenPadding,
+    marginTop: theme.spacing.lg,
     borderRadius: theme.borderRadius.xl,
     overflow: "hidden",
     ...theme.shadows.lg,

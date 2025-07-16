@@ -257,10 +257,6 @@ export default function ActivityLogsScreen() {
 
   return (
     <ScreenWrapper backgroundColor={colors.gray[50]}>
-      <View style={styles.header}>
-        <Text style={styles.screenTitle}>{t('navigation.activityLogs')}</Text>
-      </View>
-
       <View style={styles.filterContainer}>
         <FlatList
           data={filters}
@@ -328,6 +324,7 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     paddingVertical: spacing.lg,
+    marginTop: spacing.lg,
   },
   filterList: {
     paddingHorizontal: layout.screenPadding,

@@ -7,7 +7,7 @@ project_id = "kbihmibidomoxeiysadx"
 # REST APIのポート設定
 enabled = true
 # ポートを変更する場合はコメントアウトを外して設定
-# port = 54321
+port = 54321
 # schemas = ["public", "storage", "graphql_public"]
 # extra_search_path = ["public", "extensions"]
 # max_rows = 1000
