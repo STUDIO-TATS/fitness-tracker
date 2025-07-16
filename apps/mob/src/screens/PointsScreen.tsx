@@ -8,8 +8,12 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { colors } from '../constants/colors';
+import { icons } from '../constants/icons';
+import { theme } from '../constants/theme';
+import { useI18n } from '../hooks/useI18n';
 import { commonStyles, spacing, typography, layout, borderRadius, shadows } from '../constants/styles';
 
 interface PointActivity {
@@ -22,6 +26,7 @@ interface PointActivity {
 }
 
 export default function PointsScreen() {
+  const { t } = useI18n();
   const totalPoints = 2450;
   const [activities] = useState<PointActivity[]>([
     {
@@ -30,7 +35,7 @@ export default function PointsScreen() {
       points: 100,
       date: '2024-01-15',
       type: 'earned',
-      icon: 'barbell',
+      icon: icons.navigation.workout,
     },
     {
       id: '2',
@@ -38,7 +43,7 @@ export default function PointsScreen() {
       points: 250,
       date: '2024-01-14',
       type: 'earned',
-      icon: 'trophy',
+      icon: icons.rewards.trophy,
     },
     {
       id: '3',
@@ -46,7 +51,7 @@ export default function PointsScreen() {
       points: -300,
       date: '2024-01-13',
       type: 'spent',
-      icon: 'gift',
+      icon: icons.rewards.gift,
     },
     {
       id: '4',
@@ -54,7 +59,7 @@ export default function PointsScreen() {
       points: 50,
       date: '2024-01-12',
       type: 'earned',
-      icon: 'body',
+      icon: icons.stats.body,
     },
   ]);
 
@@ -67,23 +72,23 @@ export default function PointsScreen() {
 
   const renderActivity = ({ item }: { item: PointActivity }) => (
     <View style={styles.activityItem}>
-      <View style={[
-        styles.activityIcon,
-        { backgroundColor: item.type === 'earned' ? colors.mint[100] : colors.pink[100] }
-      ]}>
+      <LinearGradient
+        colors={item.type === 'earned' ? theme.colors.gradient.mint : theme.colors.gradient.secondary}
+        style={styles.activityIcon}
+      >
         <Ionicons
-          name={item.icon as any}
+          name={item.icon}
           size={20}
-          color={item.type === 'earned' ? colors.mint[600] : colors.pink[600]}
+          color={theme.colors.text.inverse}
         />
-      </View>
+      </LinearGradient>
       <View style={styles.activityInfo}>
         <Text style={styles.activityTitle}>{item.title}</Text>
         <Text style={styles.activityDate}>{item.date}</Text>
       </View>
       <Text style={[
         styles.activityPoints,
-        { color: item.type === 'earned' ? colors.mint[600] : colors.pink[600] }
+        { color: item.type === 'earned' ? theme.colors.status.completed : theme.colors.action.secondary }
       ]}>
         {item.type === 'earned' ? '+' : ''}{item.points}
       </Text>
@@ -91,23 +96,31 @@ export default function PointsScreen() {
   );
 
   return (
-    <ScreenWrapper backgroundColor={colors.purple[50]} scrollable>
+    <ScreenWrapper backgroundColor={theme.colors.background.tertiary} scrollable>
       <View style={styles.header}>
-        <Text style={styles.screenTitle}>ポイント</Text>
+        <Text style={styles.screenTitle}>{t('navigation.points')}</Text>
       </View>
 
       <View style={styles.pointsCard}>
-        <Text style={styles.pointsLabel}>現在のポイント</Text>
-        <Text style={styles.pointsValue}>{totalPoints.toLocaleString()}</Text>
-        <Text style={styles.pointsUnit}>ポイント</Text>
-        <TouchableOpacity style={styles.scanButton}>
-          <Ionicons name="qr-code" size={20} color={colors.white} />
-          <Text style={styles.scanButtonText}>QRコードでポイント獲得</Text>
-        </TouchableOpacity>
+        <LinearGradient
+          colors={theme.colors.gradient.primary}
+          style={styles.pointsGradient}
+        >
+          <Ionicons name={icons.rewards.star} size={32} color={theme.colors.text.inverse} />
+          <Text style={styles.pointsLabel}>{t('points.currentPoints')}</Text>
+          <Text style={styles.pointsValue}>{totalPoints.toLocaleString()}</Text>
+          <Text style={styles.pointsUnit}>{t('points.title')}</Text>
+          <TouchableOpacity style={styles.scanButton}>
+            <Ionicons name={icons.scanning.qrCode} size={20} color={theme.colors.action.primary} />
+            <Text style={styles.scanButtonText}>QR{t('common.code', 'コード')}でポイント獲得</Text>
+          </TouchableOpacity>
+        </LinearGradient>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>交換可能な特典</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t('points.rewards')}</Text>
+        </View>
         <FlatList
           data={rewards}
           horizontal
@@ -126,9 +139,9 @@ export default function PointsScreen() {
 
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>アクティビティ履歴</Text>
+          <Text style={styles.sectionTitle}>{t('points.pointHistory')}</Text>
           <TouchableOpacity>
-            <Text style={styles.viewAllText}>すべて見る</Text>
+            <Text style={styles.viewAllText}>{t('common.viewAll', 'すべて見る')}</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.activitiesContainer}>
@@ -149,44 +162,51 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     ...commonStyles.screenTitle,
-    color: colors.purple[700],
+    color: theme.colors.text.primary,
   },
   pointsCard: {
-    ...commonStyles.card,
     marginHorizontal: layout.screenPadding,
-    padding: spacing.xxl,
-    borderRadius: borderRadius.xl,
+    borderRadius: theme.borderRadius.xl,
+    overflow: 'hidden',
+    ...theme.shadows.lg,
+  },
+  pointsGradient: {
+    padding: theme.spacing.xxl,
     alignItems: 'center',
-    ...shadows.lg,
   },
   pointsLabel: {
     ...typography.small,
-    color: colors.gray[600],
-    marginBottom: spacing.sm,
+    color: theme.colors.text.inverse,
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.sm,
+    fontWeight: theme.fontWeight.medium,
   },
   pointsValue: {
     fontSize: 48,
-    fontWeight: 'bold',
-    color: colors.purple[700],
+    fontWeight: theme.fontWeight.bold,
+    color: theme.colors.text.inverse,
+    fontFamily: theme.fontFamily.bold,
   },
   pointsUnit: {
     ...typography.body,
-    color: colors.gray[600],
-    marginBottom: layout.screenPadding,
+    color: theme.colors.text.inverse,
+    marginBottom: theme.spacing.lg,
+    fontWeight: theme.fontWeight.medium,
   },
   scanButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.purple[500],
-    paddingHorizontal: layout.screenPadding,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.xl,
-    gap: spacing.sm,
+    backgroundColor: theme.colors.background.primary,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.xl,
+    gap: theme.spacing.sm,
+    ...theme.shadows.sm,
   },
   scanButtonText: {
     ...typography.body,
-    color: colors.white,
-    fontWeight: '600',
+    color: theme.colors.action.primary,
+    fontWeight: theme.fontWeight.semibold,
   },
   section: {
     ...commonStyles.section,
@@ -246,10 +266,10 @@ const styles = StyleSheet.create({
   activityIcon: {
     width: 40,
     height: 40,
-    borderRadius: borderRadius.full,
+    borderRadius: theme.borderRadius.full,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
+    marginRight: theme.spacing.md,
   },
   activityInfo: {
     flex: 1,
