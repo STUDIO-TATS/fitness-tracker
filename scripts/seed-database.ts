@@ -420,12 +420,14 @@ async function seedDatabase(): Promise<void> {
       );
     }
 
-    const { error: activityTypesError } = await supabase
+    const { data: insertedActivityTypes, error: activityTypesError } = await supabase
       .from('activity_types')
-      .insert(activityTypes);
+      .insert(activityTypes)
+      .select();
 
     if (activityTypesError) throw activityTypesError;
-    console.log(`✅ Created ${activityTypes.length} activity types`);
+    if (!insertedActivityTypes) throw new Error('Failed to create activity types');
+    console.log(`✅ Created ${insertedActivityTypes.length} activity types`);
 
     // 6. ポイントシステムの作成
     console.log('\n💰 Creating point systems...');
@@ -667,9 +669,9 @@ async function seedDatabase(): Promise<void> {
 
     // user1 - 多様なワークアウト履歴
     if (userIds['user1@example.com'] && facility1) {
-      const cardioType = activityTypes.find(at => at.facility_id === facility1.id && at.code === 'CARDIO-001');
-      const weightType = activityTypes.find(at => at.facility_id === facility1.id && at.code === 'WEIGHT-001');
-      const ptType = activityTypes.find(at => at.facility_id === facility1.id && at.code === 'PT-001');
+      const cardioType = insertedActivityTypes.find(at => at.facility_id === facility1.id && at.code === 'CARDIO-001');
+      const weightType = insertedActivityTypes.find(at => at.facility_id === facility1.id && at.code === 'WEIGHT-001');
+      const ptType = insertedActivityTypes.find(at => at.facility_id === facility1.id && at.code === 'PT-001');
       
       const activities = [];
       
@@ -745,9 +747,9 @@ async function seedDatabase(): Promise<void> {
 
     // user2 - ヨガ中心の活動
     if (userIds['user2@example.com'] && facility3) {
-      const hataYoga = activityTypes.find(at => at.facility_id === facility3.id && at.code === 'YOGA-001');
-      const powerYoga = activityTypes.find(at => at.facility_id === facility3.id && at.code === 'YOGA-002');
-      const hotYoga = activityTypes.find(at => at.facility_id === facility3.id && at.code === 'YOGA-003');
+      const hataYoga = insertedActivityTypes.find(at => at.facility_id === facility3.id && at.code === 'YOGA-001');
+      const powerYoga = insertedActivityTypes.find(at => at.facility_id === facility3.id && at.code === 'YOGA-002');
+      const hotYoga = insertedActivityTypes.find(at => at.facility_id === facility3.id && at.code === 'YOGA-003');
       
       const activities = [];
       
@@ -799,8 +801,8 @@ async function seedDatabase(): Promise<void> {
       
       // プールも時々利用
       if (facility4) {
-        const swimming = activityTypes.find(at => at.facility_id === facility4.id && at.code === 'SWIM-001');
-        const aqua = activityTypes.find(at => at.facility_id === facility4.id && at.code === 'SWIM-002');
+        const swimming = insertedActivityTypes.find(at => at.facility_id === facility4.id && at.code === 'SWIM-001');
+        const aqua = insertedActivityTypes.find(at => at.facility_id === facility4.id && at.code === 'SWIM-002');
         
         for (let i = 0; i < 30; i += 7) {
           const date = new Date();
@@ -838,7 +840,7 @@ async function seedDatabase(): Promise<void> {
 
     // user3 - 早朝スイマー
     if (userIds['user3@example.com'] && facility4) {
-      const swimming = activityTypes.find(at => at.facility_id === facility4.id && at.code === 'SWIM-001');
+      const swimming = insertedActivityTypes.find(at => at.facility_id === facility4.id && at.code === 'SWIM-001');
       const activities = [];
       
       // 過去4ヶ月分の早朝スイミング
