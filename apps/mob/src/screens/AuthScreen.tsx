@@ -14,12 +14,21 @@ import { supabase } from '../lib/supabase';
 import { colors } from '../constants/colors';
 import { useI18n } from '../hooks/useI18n';
 
+// Development test users
+const DEV_USERS = [
+  { email: 'admin@example.com', password: 'adminpassword123', name: '管理者' },
+  { email: 'user1@example.com', password: 'password123', name: 'ユーザー1' },
+  { email: 'user2@example.com', password: 'password123', name: 'ユーザー2' },
+  { email: 'premium@example.com', password: 'password123', name: 'プレミアム会員' },
+];
+
 export default function AuthScreen() {
   const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const isDev = __DEV__; // React Native's development flag
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -54,6 +63,10 @@ export default function AuthScreen() {
     }
   };
 
+  const handleDevUserSelect = (devEmail: string, devPassword: string) => {
+    setEmail(devEmail);
+    setPassword(devPassword);
+  };
 
   return (
     <KeyboardAvoidingView 
@@ -111,6 +124,26 @@ export default function AuthScreen() {
               : 'アカウントをお持ちでない方はこちら'}
           </Text>
         </TouchableOpacity>
+
+        {/* Development only: Test user selection */}
+        {isDev && !isSignUp && (
+          <View style={styles.devSection}>
+            <Text style={styles.devTitle}>開発用テストユーザー</Text>
+            <View style={styles.devUsersContainer}>
+              {DEV_USERS.map((user, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.devUserButton}
+                  onPress={() => handleDevUserSelect(user.email, user.password)}
+                >
+                  <Text style={styles.devUserName}>{user.name}</Text>
+                  <Text style={styles.devUserEmail}>{user.email}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={styles.devNote}>※ 開発環境でのみ表示されます</Text>
+          </View>
+        )}
       </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -177,5 +210,50 @@ const styles = StyleSheet.create({
   switchText: {
     color: colors.purple[600],
     fontSize: 14,
+  },
+  // Development styles
+  devSection: {
+    marginTop: 40,
+    padding: 20,
+    backgroundColor: colors.yellow[50],
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.yellow[300],
+    borderStyle: 'dashed' as const,
+  },
+  devTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.yellow[800],
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  devUsersContainer: {
+    gap: 8,
+  },
+  devUserButton: {
+    backgroundColor: colors.white,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.yellow[300],
+    marginBottom: 8,
+  },
+  devUserName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.gray[800],
+    marginBottom: 2,
+  },
+  devUserEmail: {
+    fontSize: 12,
+    color: colors.gray[600],
+  },
+  devNote: {
+    fontSize: 12,
+    color: colors.yellow[700],
+    textAlign: 'center',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
 });
