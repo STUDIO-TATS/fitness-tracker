@@ -15,6 +15,19 @@ export default {
     yes: 'Yes',
     no: 'No',
     guest: 'Guest',
+    code: 'Code',
+    viewAll: 'View All',
+    noData: 'No data available',
+    success: 'Success',
+    shareError: 'Failed to share',
+    profileSaved: 'Profile updated',
+    emailPasswordRequired: 'Please enter email and password',
+    confirmEmailSent: 'Confirmation email sent',
+    facilityDataError: 'Failed to fetch facility data',
+    dataLoadError: 'Failed to load data',
+    today: 'Today',
+    yesterday: 'Yesterday',
+    older: 'Older',
   },
 
   // Authentication
@@ -70,6 +83,13 @@ export default {
     minutes: 'min',
     kcal: 'kcal',
     save: 'Save Workout',
+    monthlyCount: 'This Month\'s Workouts',
+    weeklyAverage: 'Weekly Average',
+    sets: 'Sets',
+    reps: 'Reps',
+    moreExercises: 'More Exercises',
+    exercises: 'Exercises',
+    details: 'Workout Details',
     activities: {
       running: 'Running',
       walking: 'Walking',
@@ -145,6 +165,15 @@ export default {
     expiring: 'Expiring Soon',
     rewards: 'Exchange for Rewards',
     expirationDate: 'Expiration Date',
+  },
+  
+  // Activity Logs
+  activityLogs: {
+    title: 'Activity Logs',
+    filterAll: 'All',
+    filterWorkout: 'Workout',
+    filterMeasurement: 'Measurement',
+    noData: 'No activities',
   },
 
   // Calendar

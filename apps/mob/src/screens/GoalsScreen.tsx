@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -8,17 +8,24 @@ import {
   Modal,
   TextInput,
   Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import ViewShot from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
-import { ScreenWrapper } from '../components/ScreenWrapper';
-import { colors } from '../constants/colors';
-import { icons } from '../constants/icons';
-import { theme } from '../constants/theme';
-import { useI18n } from '../hooks/useI18n';
-import { commonStyles, spacing, typography, layout, borderRadius, shadows } from '../constants/styles';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import ViewShot from "react-native-view-shot";
+import * as Sharing from "expo-sharing";
+import { ScreenWrapper } from "../components/ScreenWrapper";
+import { colors } from "../constants/colors";
+import { icons } from "../constants/icons";
+import { theme } from "../constants/theme";
+import { useI18n } from "../hooks/useI18n";
+import {
+  commonStyles,
+  spacing,
+  typography,
+  layout,
+  borderRadius,
+  shadows,
+} from "../constants/styles";
 
 interface Goal {
   id: string;
@@ -35,30 +42,30 @@ export default function GoalsScreen() {
   const viewShotRef = useRef<ViewShot>(null);
   const [goals, setGoals] = useState<Goal[]>([
     {
-      id: '1',
-      title: '週3回のワークアウト',
-      target: '今週',
+      id: "1",
+      title: "週3回のワークアウト",
+      target: "今週",
       current: 2,
       total: 3,
-      unit: '回',
+      unit: "回",
       color: colors.primary,
     },
     {
-      id: '2',
-      title: '体重を減らす',
-      target: '今月',
+      id: "2",
+      title: "体重を減らす",
+      target: "今月",
       current: 1.5,
       total: 3,
-      unit: 'kg',
+      unit: "kg",
       color: colors.purple[500],
     },
     {
-      id: '3',
-      title: '水分摂取',
-      target: '毎日',
+      id: "3",
+      title: "水分摂取",
+      target: "毎日",
       current: 1.8,
       total: 2,
-      unit: 'L',
+      unit: "L",
       color: colors.mint[500],
     },
   ]);
@@ -71,12 +78,12 @@ export default function GoalsScreen() {
       const uri = await viewShotRef.current?.capture?.();
       if (uri) {
         await Sharing.shareAsync(uri, {
-          mimeType: 'image/png',
-          dialogTitle: '目標を共有',
+          mimeType: "image/png",
+          dialogTitle: "目標を共有",
         });
       }
     } catch (error) {
-      Alert.alert('エラー', 'シェアに失敗しました');
+      Alert.alert(t("common.error"), t("common.shareError"));
     }
   };
 
@@ -89,12 +96,15 @@ export default function GoalsScreen() {
     const progress = (item.current / item.total) * 100;
 
     return (
-      <TouchableOpacity style={styles.goalCard} onLongPress={() => openShareModal(item)}>
+      <TouchableOpacity
+        style={styles.goalCard}
+        onLongPress={() => openShareModal(item)}
+      >
         <View style={styles.goalHeader}>
           <Text style={styles.goalTitle}>{item.title}</Text>
           <Text style={styles.goalTarget}>{item.target}</Text>
         </View>
-        
+
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
             <View
@@ -108,7 +118,7 @@ export default function GoalsScreen() {
             {item.current} / {item.total} {item.unit}
           </Text>
         </View>
-        
+
         <Text style={styles.progressPercentage}>{Math.round(progress)}%</Text>
       </TouchableOpacity>
     );
@@ -117,7 +127,14 @@ export default function GoalsScreen() {
   return (
     <ScreenWrapper backgroundColor={theme.colors.background.tertiary}>
       <View style={[commonStyles.screenHeader, styles.header]}>
-        <Text style={[commonStyles.screenTitle, { color: theme.colors.text.primary }]}>{t('navigation.goals')}</Text>
+        <Text
+          style={[
+            commonStyles.screenTitle,
+            { color: theme.colors.text.primary },
+          ]}
+        >
+          {t("navigation.goals")}
+        </Text>
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => setModalVisible(true)}
@@ -126,7 +143,11 @@ export default function GoalsScreen() {
             colors={theme.colors.gradient.aurora}
             style={styles.addButtonGradient}
           >
-            <Ionicons name={icons.status.add} size={24} color={theme.colors.text.inverse} />
+            <Ionicons
+              name={icons.status.add}
+              size={24}
+              color={theme.colors.text.inverse}
+            />
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -153,13 +174,13 @@ export default function GoalsScreen() {
                 <Ionicons name="close" size={24} color={colors.gray[600]} />
               </TouchableOpacity>
             </View>
-            
+
             <TextInput
               style={styles.input}
               placeholder="目標のタイトル"
               placeholderTextColor={colors.gray[400]}
             />
-            
+
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
@@ -167,7 +188,7 @@ export default function GoalsScreen() {
               >
                 <Text style={styles.cancelButtonText}>キャンセル</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={() => setModalVisible(false)}
@@ -190,19 +211,23 @@ export default function GoalsScreen() {
           activeOpacity={1}
           onPress={() => setShareModalVisible(false)}
         >
-          <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1 }}>
+          <ViewShot ref={viewShotRef} options={{ format: "png", quality: 1 }}>
             <View style={styles.shareCard}>
               <Text style={styles.shareTitle}>目標達成中！ 🎯</Text>
               {selectedGoal && (
                 <>
-                  <Text style={styles.shareGoalTitle}>{selectedGoal.title}</Text>
+                  <Text style={styles.shareGoalTitle}>
+                    {selectedGoal.title}
+                  </Text>
                   <View style={styles.shareProgressContainer}>
                     <View style={styles.shareProgressBar}>
                       <View
                         style={[
                           styles.shareProgressFill,
                           {
-                            width: `${(selectedGoal.current / selectedGoal.total) * 100}%`,
+                            width: `${
+                              (selectedGoal.current / selectedGoal.total) * 100
+                            }%`,
                             backgroundColor: selectedGoal.color,
                           },
                         ]}
@@ -210,17 +235,21 @@ export default function GoalsScreen() {
                     </View>
                   </View>
                   <Text style={styles.shareProgressText}>
-                    {Math.round((selectedGoal.current / selectedGoal.total) * 100)}% 完了
+                    {Math.round(
+                      (selectedGoal.current / selectedGoal.total) * 100
+                    )}
+                    % 完了
                   </Text>
                   <Text style={styles.shareStats}>
-                    {selectedGoal.current} / {selectedGoal.total} {selectedGoal.unit}
+                    {selectedGoal.current} / {selectedGoal.total}{" "}
+                    {selectedGoal.unit}
                   </Text>
                 </>
               )}
               <Text style={styles.shareFooter}>Fitness Tracker</Text>
             </View>
           </ViewShot>
-          
+
           <View style={styles.shareActions}>
             <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
               <Ionicons name="share-social" size={24} color={colors.white} />
@@ -235,28 +264,28 @@ export default function GoalsScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 20,
     paddingBottom: 0,
   },
   screenTitle: {
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.purple[700],
   },
   addButton: {
     width: 44,
     height: 44,
     borderRadius: theme.borderRadius.full,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   addButtonGradient: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
   },
   listContent: {
     padding: 20,
@@ -268,21 +297,21 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
   goalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   goalTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.gray[900],
     flex: 1,
   },
@@ -298,10 +327,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gray[200],
     borderRadius: 4,
     marginBottom: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 4,
   },
   progressText: {
@@ -310,14 +339,14 @@ const styles = StyleSheet.create({
   },
   progressPercentage: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.gray[900],
-    textAlign: 'right',
+    textAlign: "right",
   },
   modalContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
     backgroundColor: colors.white,
@@ -327,14 +356,14 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 20,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.gray[900],
   },
   input: {
@@ -346,14 +375,14 @@ const styles = StyleSheet.create({
     color: colors.gray[900],
   },
   modalActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   modalButton: {
     flex: 1,
     paddingVertical: 16,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cancelButton: {
     backgroundColor: colors.gray[200],
@@ -361,7 +390,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: colors.gray[700],
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   saveButton: {
     backgroundColor: colors.purple[500],
@@ -369,52 +398,52 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: colors.white,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   shareModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   shareCard: {
     backgroundColor: colors.white,
     borderRadius: 20,
     padding: 32,
-    alignItems: 'center',
+    alignItems: "center",
     minWidth: 300,
   },
   shareTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.purple[700],
     marginBottom: 20,
   },
   shareGoalTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.gray[900],
     marginBottom: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
   shareProgressContainer: {
-    width: '100%',
+    width: "100%",
     marginBottom: 16,
   },
   shareProgressBar: {
     height: 20,
     backgroundColor: colors.gray[200],
     borderRadius: 10,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   shareProgressFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 10,
   },
   shareProgressText: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.gray[900],
     marginBottom: 8,
   },
@@ -426,23 +455,23 @@ const styles = StyleSheet.create({
   shareFooter: {
     fontSize: 14,
     color: colors.gray[500],
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   shareActions: {
     marginTop: 24,
   },
   shareButton: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: colors.purple[500],
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 24,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 8,
   },
   shareButtonText: {
     color: colors.white,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

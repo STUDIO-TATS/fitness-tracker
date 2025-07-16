@@ -711,12 +711,7 @@ SELECT * FROM (
             WHEN email = 'user3@example.com' THEN 5
             ELSE 6
         END as sort_order,
-        'Email: ' || email || ' / Password: ' || 
-        CASE 
-            WHEN email = 'admin@fittracker.com' THEN 'Admin123!'
-            WHEN email = 'staff@fittracker.com' THEN 'Staff123!'
-            ELSE 'User123!'
-        END || ' / Name: ' || COALESCE(raw_user_meta_data->>'name', email) as info
+        'Email: ' || email || ' / Password: testpass123 / Name: ' || COALESCE(raw_user_meta_data->>'name', email) as info
     FROM auth.users 
     WHERE email IN (
         'admin@fittracker.com',

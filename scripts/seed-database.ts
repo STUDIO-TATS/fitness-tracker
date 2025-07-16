@@ -47,7 +47,7 @@ interface UserData {
 const users: UserData[] = [
   {
     email: 'admin@fittracker.com',
-    password: 'Admin123!',
+    password: 'testpass123',
     metadata: { name: 'システム管理者' },
     profile: {
       display_name: 'システム管理者',
@@ -61,7 +61,7 @@ const users: UserData[] = [
   },
   {
     email: 'staff@fittracker.com',
-    password: 'Staff123!',
+    password: 'testpass123',
     metadata: { name: 'スタッフ太郎' },
     profile: {
       display_name: 'スタッフ太郎',
@@ -75,7 +75,7 @@ const users: UserData[] = [
   },
   {
     email: 'user1@example.com',
-    password: 'User123!',
+    password: 'testpass123',
     metadata: { name: '田中太郎' },
     profile: {
       display_name: '田中太郎',
@@ -89,7 +89,7 @@ const users: UserData[] = [
   },
   {
     email: 'user2@example.com',
-    password: 'User123!',
+    password: 'testpass123',
     metadata: { name: '鈴木花子' },
     profile: {
       display_name: '鈴木花子',
@@ -103,7 +103,7 @@ const users: UserData[] = [
   },
   {
     email: 'user3@example.com',
-    password: 'User123!',
+    password: 'testpass123',
     metadata: { name: '佐藤次郎' },
     profile: {
       display_name: '佐藤次郎',
@@ -661,117 +661,602 @@ async function seedDatabase(): Promise<void> {
     // 11. アクティビティログの作成
     console.log('\n📊 Creating activity logs...');
     const facility1 = facilities.find(f => f.code === 'FW-SHIBUYA-001');
+    const facility2 = facilities.find(f => f.code === 'FW-UMEDA-001');
     const facility3 = facilities.find(f => f.code === 'HL-AOYAMA-001');
     const facility4 = facilities.find(f => f.code === 'HL-YOKOHAMA-001');
 
+    // user1 - 多様なワークアウト履歴
     if (userIds['user1@example.com'] && facility1) {
-      const activityType = activityTypes.find(at => at.facility_id === facility1.id && at.code === 'CARDIO-001');
-      if (activityType) {
-        const activities = [];
-        for (let i = 0; i < 30; i += 3) {
-          const checkInTime = new Date();
-          checkInTime.setDate(checkInTime.getDate() - (30 - i));
-          checkInTime.setHours(10, 0, 0, 0);
+      const cardioType = activityTypes.find(at => at.facility_id === facility1.id && at.code === 'CARDIO-001');
+      const weightType = activityTypes.find(at => at.facility_id === facility1.id && at.code === 'WEIGHT-001');
+      const ptType = activityTypes.find(at => at.facility_id === facility1.id && at.code === 'PT-001');
+      
+      const activities = [];
+      
+      // 過去3ヶ月分のアクティビティを生成
+      for (let i = 0; i < 90; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        
+        // 週3-4回のペースでトレーニング
+        if (i % 2 === 0 || i % 3 === 0) {
+          // 朝トレーニングと夜トレーニングを混在
+          const isEvening = i % 5 === 0;
+          const checkInTime = new Date(date);
+          checkInTime.setHours(isEvening ? 19 : 10, 0, 0, 0);
+          
+          // アクティビティタイプをローテーション
+          let activityType, duration, calories, notes, data;
+          
+          if (i % 6 === 0) {
+            // パーソナルトレーニング
+            activityType = ptType;
+            duration = 60;
+            calories = 500;
+            notes = 'パーソナルトレーニング - 全身';
+            data = { trainer: '山田トレーナー', focus: '全身', satisfaction: 5 };
+          } else if (i % 3 === 0) {
+            // 有酸素運動
+            activityType = cardioType;
+            duration = 30 + (i % 4) * 10; // 30-60分
+            calories = 300 + (i % 4) * 100;
+            const distance = 3.0 + (i % 4) * 1.5;
+            notes = `ランニング ${distance}km`;
+            data = { 
+              speed_avg: 5.5 + (i % 3), 
+              incline: i % 5, 
+              heart_rate_avg: 140 + (i % 20),
+              machine: i % 2 === 0 ? 'treadmill' : 'bike'
+            };
+          } else {
+            // ウェイトトレーニング
+            activityType = weightType;
+            duration = 45 + (i % 3) * 15; // 45-75分
+            calories = 250 + (i % 3) * 50;
+            const focus = ['胸・三頭', '背中・二頭', '脚・肩'][i % 3];
+            notes = `ウェイトトレーニング - ${focus}`;
+            data = { 
+              focus_area: focus,
+              sets_completed: 12 + (i % 4) * 2,
+              personal_records: i % 10 === 0
+            };
+          }
           
           const checkOutTime = new Date(checkInTime);
-          checkOutTime.setHours(11, 0, 0, 0);
-
+          checkOutTime.setMinutes(checkOutTime.getMinutes() + duration);
+          
           activities.push({
             user_id: userIds['user1@example.com'],
             company_id: company1.id,
             facility_id: facility1.id,
-            activity_type_id: activityType.id,
+            activity_type_id: activityType?.id,
             check_in_time: checkInTime.toISOString(),
             check_out_time: checkOutTime.toISOString(),
-            duration_minutes: 60,
-            calories_burned: 400,
-            distance_km: 5.5,
-            notes: 'ランニングマシンで5.5km走行',
-            data: { speed_avg: 5.5, incline: 2, heart_rate_avg: 145 }
+            duration_minutes: duration,
+            calories_burned: calories,
+            distance_km: data?.speed_avg ? (duration / 60) * data.speed_avg : null,
+            notes: notes,
+            data: data
           });
         }
-        await supabase.from('activity_logs').insert(activities);
       }
+      await supabase.from('activity_logs').insert(activities);
+    }
+
+    // user2 - ヨガ中心の活動
+    if (userIds['user2@example.com'] && facility3) {
+      const hataYoga = activityTypes.find(at => at.facility_id === facility3.id && at.code === 'YOGA-001');
+      const powerYoga = activityTypes.find(at => at.facility_id === facility3.id && at.code === 'YOGA-002');
+      const hotYoga = activityTypes.find(at => at.facility_id === facility3.id && at.code === 'YOGA-003');
+      
+      const activities = [];
+      
+      // 過去2ヶ月分のヨガ活動
+      for (let i = 0; i < 60; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        
+        // 週2-3回のペース
+        if (date.getDay() === 2 || date.getDay() === 4 || (date.getDay() === 6 && i % 2 === 0)) {
+          const checkInTime = new Date(date);
+          checkInTime.setHours(date.getDay() === 6 ? 10 : 19, 0, 0, 0);
+          
+          // ヨガタイプをローテーション
+          let yogaType, instructor;
+          if (date.getDay() === 2) {
+            yogaType = hataYoga;
+            instructor = '田中先生';
+          } else if (date.getDay() === 4) {
+            yogaType = powerYoga;
+            instructor = '佐藤先生';
+          } else {
+            yogaType = hotYoga;
+            instructor = '鈴木先生';
+          }
+          
+          const checkOutTime = new Date(checkInTime);
+          checkOutTime.setMinutes(checkOutTime.getMinutes() + (yogaType?.duration_minutes || 60));
+          
+          activities.push({
+            user_id: userIds['user2@example.com'],
+            company_id: company2.id,
+            facility_id: facility3.id,
+            activity_type_id: yogaType?.id,
+            check_in_time: checkInTime.toISOString(),
+            check_out_time: checkOutTime.toISOString(),
+            duration_minutes: yogaType?.duration_minutes || 60,
+            calories_burned: (yogaType?.calories_per_hour || 200) * ((yogaType?.duration_minutes || 60) / 60),
+            notes: `${yogaType?.name}クラス参加`,
+            data: { 
+              instructor: instructor,
+              class_size: 8 + (i % 7),
+              flexibility_level: 3 + Math.floor(i / 20),
+              poses_completed: 20 + (i % 10)
+            }
+          });
+        }
+      }
+      
+      // プールも時々利用
+      if (facility4) {
+        const swimming = activityTypes.find(at => at.facility_id === facility4.id && at.code === 'SWIM-001');
+        const aqua = activityTypes.find(at => at.facility_id === facility4.id && at.code === 'SWIM-002');
+        
+        for (let i = 0; i < 30; i += 7) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          const checkInTime = new Date(date);
+          checkInTime.setHours(11, 0, 0, 0);
+          
+          const isAqua = i % 14 === 0;
+          const activityType = isAqua ? aqua : swimming;
+          const duration = isAqua ? 45 : 30;
+          
+          const checkOutTime = new Date(checkInTime);
+          checkOutTime.setMinutes(checkOutTime.getMinutes() + duration);
+          
+          activities.push({
+            user_id: userIds['user2@example.com'],
+            company_id: company2.id,
+            facility_id: facility4.id,
+            activity_type_id: activityType?.id,
+            check_in_time: checkInTime.toISOString(),
+            check_out_time: checkOutTime.toISOString(),
+            duration_minutes: duration,
+            calories_burned: isAqua ? 300 : 250,
+            distance_km: isAqua ? null : 1.0,
+            notes: isAqua ? 'アクアビクスクラス' : 'ゆったり水泳',
+            data: isAqua ? 
+              { instructor: '水野先生', intensity: 'medium' } : 
+              { style: 'breaststroke', laps: 40, pool_lane: 3 }
+          });
+        }
+      }
+      
+      await supabase.from('activity_logs').insert(activities);
+    }
+
+    // user3 - 早朝スイマー
+    if (userIds['user3@example.com'] && facility4) {
+      const swimming = activityTypes.find(at => at.facility_id === facility4.id && at.code === 'SWIM-001');
+      const activities = [];
+      
+      // 過去4ヶ月分の早朝スイミング
+      for (let i = 0; i < 120; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        
+        // 平日のみ（月〜金）
+        if (date.getDay() >= 1 && date.getDay() <= 5) {
+          const checkInTime = new Date(date);
+          checkInTime.setHours(6, 30, 0, 0);
+          
+          const checkOutTime = new Date(checkInTime);
+          checkOutTime.setHours(8, 0, 0, 0);
+          
+          const distance = 2.0 + (i % 10) * 0.5; // 2-6.5km
+          const laps = distance * 40; // 25mプール換算
+          
+          activities.push({
+            user_id: userIds['user3@example.com'],
+            company_id: company2.id,
+            facility_id: facility4.id,
+            activity_type_id: swimming?.id,
+            check_in_time: checkInTime.toISOString(),
+            check_out_time: checkOutTime.toISOString(),
+            duration_minutes: 90,
+            calories_burned: 600 + (distance - 2) * 100,
+            distance_km: distance,
+            notes: `朝スイム ${distance}km`,
+            data: { 
+              style: ['freestyle', 'backstroke', 'butterfly', 'breaststroke'][i % 4],
+              laps: laps,
+              pool_lane: (i % 6) + 1,
+              avg_pace_per_100m: 1.8 - (i % 10) * 0.05,
+              water_temp: 26.5,
+              splits: Array(Math.floor(distance)).fill(null).map((_, idx) => ({
+                km: idx + 1,
+                time_minutes: 15 + (i % 3) - (idx % 2)
+              }))
+            }
+          });
+        }
+      }
+      await supabase.from('activity_logs').insert(activities);
     }
 
     // 12. 測定記録の作成
     console.log('\n📏 Creating measurements...');
+    
+    // user1 - 減量と筋力増強の経過
     if (userIds['user1@example.com'] && facility1) {
-      await supabase
-        .from('measurements')
-        .insert([
-          {
-            user_id: userIds['user1@example.com'],
-            company_id: company1.id,
-            facility_id: facility1.id,
-            measurement_date: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            weight: 75.5,
-            body_fat_percentage: 18.5,
-            muscle_mass: 58.2,
-            bmi: 23.4,
-            measurements: { chest: 98, waist: 82, hip: 96 },
-            notes: '初回測定'
+      const measurements = [];
+      
+      // 過去6ヶ月分の月次測定
+      for (let i = 0; i < 6; i++) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        
+        // 体重は減少傾向、筋肉量は増加傾向
+        const weight = 75.5 - (i * 0.6); // 75.5kg → 72.0kg
+        const bodyFat = 18.5 - (i * 0.5); // 18.5% → 15.5%
+        const muscleMass = 58.2 + (i * 0.3); // 58.2kg → 60.0kg
+        const bmi = weight / (1.75 * 1.75); // 身長175cmと仮定
+        
+        measurements.push({
+          user_id: userIds['user1@example.com'],
+          company_id: company1.id,
+          facility_id: facility1.id,
+          measurement_date: date.toISOString().split('T')[0],
+          weight: Math.round(weight * 10) / 10,
+          body_fat_percentage: Math.round(bodyFat * 10) / 10,
+          muscle_mass: Math.round(muscleMass * 10) / 10,
+          bmi: Math.round(bmi * 10) / 10,
+          measurements: {
+            chest: 98 - i,
+            waist: 82 - (i * 1.2),
+            hip: 96 - (i * 0.5),
+            arm_left: 35 + (i * 0.2),
+            arm_right: 35 + (i * 0.2),
+            thigh_left: 58 - (i * 0.3),
+            thigh_right: 58 - (i * 0.3)
           },
-          {
-            user_id: userIds['user1@example.com'],
-            company_id: company1.id,
-            facility_id: facility1.id,
-            measurement_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            weight: 73.2,
-            body_fat_percentage: 16.8,
-            muscle_mass: 59.1,
-            bmi: 22.7,
-            measurements: { chest: 96, waist: 78, hip: 94 },
-            notes: '順調に減量中'
+          notes: i === 0 ? '目標達成間近！' : 
+                 i === 5 ? '初回測定' : 
+                 `${6-i}ヶ月目の測定`
+        });
+      }
+      
+      await supabase.from('measurements').insert(measurements.reverse());
+    }
+    
+    // user2 - ヨガによる体型改善
+    if (userIds['user2@example.com'] && facility3) {
+      const measurements = [];
+      
+      // 過去4ヶ月分の月2回測定
+      for (let i = 0; i < 8; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() - (i * 15)); // 2週間ごと
+        
+        // 体重減少、柔軟性向上
+        const weight = 58.5 - (i * 0.5); // 58.5kg → 54.5kg
+        const bodyFat = 28.0 - (i * 0.6); // 28.0% → 23.2%
+        const muscleMass = 39.5 + (i * 0.1); // 39.5kg → 40.3kg
+        const bmi = weight / (1.60 * 1.60); // 身長160cmと仮定
+        
+        measurements.push({
+          user_id: userIds['user2@example.com'],
+          company_id: company2.id,
+          facility_id: facility3.id,
+          measurement_date: date.toISOString().split('T')[0],
+          weight: Math.round(weight * 10) / 10,
+          body_fat_percentage: Math.round(bodyFat * 10) / 10,
+          muscle_mass: Math.round(muscleMass * 10) / 10,
+          bmi: Math.round(bmi * 10) / 10,
+          measurements: {
+            chest: 86 - (i * 0.4),
+            waist: 72 - (i * 0.8),
+            hip: 96 - (i * 0.5),
+            flexibility_score: 3 + (i * 0.5) // ヨガ特有の柔軟性スコア
           },
-          {
-            user_id: userIds['user1@example.com'],
-            company_id: company1.id,
-            facility_id: facility1.id,
-            measurement_date: new Date().toISOString().split('T')[0],
-            weight: 72.0,
-            body_fat_percentage: 15.5,
-            muscle_mass: 60.0,
-            bmi: 22.3,
-            measurements: { chest: 95, waist: 76, hip: 93 },
-            notes: '目標達成間近！'
-          }
-        ]);
+          notes: i === 0 ? '理想的な体型に近づいている' : 
+                 i === 7 ? 'ヨガ開始前の記録' : 
+                 `開始から${Math.floor((8-i)/2)}ヶ月経過`
+        });
+      }
+      
+      await supabase.from('measurements').insert(measurements.reverse());
+    }
+    
+    // user3 - 競泳選手として体型維持
+    if (userIds['user3@example.com'] && facility4) {
+      const measurements = [];
+      
+      // 過去3ヶ月分の週次測定（競技者なので頻繁）
+      for (let i = 0; i < 12; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() - (i * 7)); // 週1回
+        
+        // 体重・体脂肪率は安定、筋肉量は微増
+        const weight = 68.0 + Math.sin(i / 3) * 1.5; // 66.5-69.5kgで変動
+        const bodyFat = 12.5 - (i * 0.12); // 12.5% → 11.0%
+        const muscleMass = 55.0 + (i * 0.2); // 55.0kg → 57.4kg
+        const bmi = weight / (1.78 * 1.78); // 身長178cmと仮定
+        
+        measurements.push({
+          user_id: userIds['user3@example.com'],
+          company_id: company2.id,
+          facility_id: facility4.id,
+          measurement_date: date.toISOString().split('T')[0],
+          weight: Math.round(weight * 10) / 10,
+          body_fat_percentage: Math.round(bodyFat * 10) / 10,
+          muscle_mass: Math.round(muscleMass * 10) / 10,
+          bmi: Math.round(bmi * 10) / 10,
+          measurements: {
+            chest: 92 + (i * 0.2),
+            waist: 75 - (i * 0.1),
+            hip: 90,
+            shoulder_width: 48 + (i * 0.1),
+            arm_span: 185, // 水泳選手特有の測定
+            lung_capacity: 5500 + (i * 50) // 肺活量
+          },
+          notes: `週次測定 - ${i === 0 ? '絶好調' : i < 4 ? '調子良好' : '基礎作り期'}`
+        });
+      }
+      
+      await supabase.from('measurements').insert(measurements.reverse());
     }
 
     // 13. ポイント履歴の作成
     console.log('\n💎 Creating point transactions...');
+    
+    // user1 - アクティブなポイント利用者
     if (userIds['user1@example.com']) {
-      await supabase
-        .from('point_transactions')
-        .insert([
-          {
+      const transactions = [];
+      let balance = 0;
+      
+      // 初回ボーナス
+      balance += 500;
+      transactions.push({
+        user_id: userIds['user1@example.com'],
+        company_id: company1.id,
+        transaction_type: 'earn',
+        amount: 500,
+        balance_after: balance,
+        description: '新規入会ボーナス',
+        created_at: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+        expires_at: new Date(Date.now() + 275 * 24 * 60 * 60 * 1000).toISOString()
+      });
+      
+      // 定期的なワークアウトポイント
+      for (let i = 0; i < 30; i++) {
+        const daysAgo = 90 - (i * 3);
+        const earnDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+        
+        // ワークアウトポイント（50-100ポイント）
+        const points = 50 + Math.floor(Math.random() * 51);
+        balance += points;
+        
+        transactions.push({
+          user_id: userIds['user1@example.com'],
+          company_id: company1.id,
+          transaction_type: 'earn',
+          amount: points,
+          balance_after: balance,
+          description: `ワークアウト完了ボーナス`,
+          created_at: earnDate.toISOString(),
+          expires_at: new Date(earnDate.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString()
+        });
+        
+        // 時々連続ボーナス
+        if (i % 7 === 6) {
+          const bonus = 200;
+          balance += bonus;
+          transactions.push({
             user_id: userIds['user1@example.com'],
             company_id: company1.id,
             transaction_type: 'earn',
-            amount: 500,
-            balance_after: 500,
-            description: '新規入会ボーナス',
-            expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-          },
-          {
-            user_id: userIds['user1@example.com'],
-            company_id: company1.id,
+            amount: bonus,
+            balance_after: balance,
+            description: '週間連続達成ボーナス',
+            created_at: new Date(earnDate.getTime() + 1000).toISOString(),
+            expires_at: new Date(earnDate.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString()
+          });
+        }
+      }
+      
+      // ポイント使用履歴
+      const uses = [
+        { amount: 300, desc: 'プロテインバー購入', daysAgo: 60 },
+        { amount: 500, desc: 'ジムタオル交換', daysAgo: 40 },
+        { amount: 200, desc: 'ドリンク購入', daysAgo: 20 },
+        { amount: 1000, desc: '1日無料パス交換', daysAgo: 10 }
+      ];
+      
+      uses.forEach(use => {
+        balance -= use.amount;
+        transactions.push({
+          user_id: userIds['user1@example.com'],
+          company_id: company1.id,
+          transaction_type: 'use',
+          amount: -use.amount,
+          balance_after: balance,
+          description: use.desc,
+          created_at: new Date(Date.now() - use.daysAgo * 24 * 60 * 60 * 1000).toISOString()
+        });
+      });
+      
+      await supabase.from('point_transactions').insert(transactions);
+    }
+    
+    // user2 - 2社のポイントを活用
+    if (userIds['user2@example.com']) {
+      // フィットネスワールドのポイント
+      const fwTransactions = [];
+      let fwBalance = 0;
+      
+      fwBalance += 800;
+      fwTransactions.push({
+        user_id: userIds['user2@example.com'],
+        company_id: company1.id,
+        transaction_type: 'earn',
+        amount: 800,
+        balance_after: fwBalance,
+        description: '入会キャンペーンボーナス',
+        created_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+        expires_at: new Date(Date.now() + 305 * 24 * 60 * 60 * 1000).toISOString()
+      });
+      
+      // ヘルシーライフのポイント（ヨガクラス参加）
+      const hlTransactions = [];
+      let hlBalance = 0;
+      
+      // ヨガクラス参加ポイント
+      for (let i = 0; i < 20; i++) {
+        const daysAgo = 60 - (i * 3);
+        const earnDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+        
+        const points = 100;
+        hlBalance += points;
+        
+        hlTransactions.push({
+          user_id: userIds['user2@example.com'],
+          company_id: company2.id,
+          transaction_type: 'earn',
+          amount: points,
+          balance_after: hlBalance,
+          description: 'ヨガクラス参加',
+          created_at: earnDate.toISOString(),
+          expires_at: new Date(earnDate.getTime() + 730 * 24 * 60 * 60 * 1000).toISOString() // 2年
+        });
+      }
+      
+      // 特別ボーナス
+      hlBalance += 1000;
+      hlTransactions.push({
+        user_id: userIds['user2@example.com'],
+        company_id: company2.id,
+        transaction_type: 'earn',
+        amount: 1000,
+        balance_after: hlBalance,
+        description: '友人紹介ボーナス',
+        created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        expires_at: new Date(Date.now() + 700 * 24 * 60 * 60 * 1000).toISOString()
+      });
+      
+      await supabase.from('point_transactions').insert([...fwTransactions, ...hlTransactions]);
+    }
+    
+    // user3 - VIP会員の大量ポイント
+    if (userIds['user3@example.com']) {
+      const transactions = [];
+      let balance = 0;
+      
+      // VIP登録ボーナス
+      balance += 5000;
+      transactions.push({
+        user_id: userIds['user3@example.com'],
+        company_id: company2.id,
+        transaction_type: 'earn',
+        amount: 5000,
+        balance_after: balance,
+        description: 'VIP会員登録ボーナス',
+        created_at: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString(),
+        expires_at: new Date(Date.now() + 610 * 24 * 60 * 60 * 1000).toISOString()
+      });
+      
+      // 毎日の早朝スイミングポイント（平日のみ）
+      for (let i = 0; i < 80; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        
+        if (date.getDay() >= 1 && date.getDay() <= 5) {
+          const points = 80; // 早朝ボーナス付き
+          balance += points;
+          
+          transactions.push({
+            user_id: userIds['user3@example.com'],
+            company_id: company2.id,
             transaction_type: 'earn',
-            amount: 1500,
-            balance_after: 2000,
-            description: '月間利用ボーナス',
-            expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-          },
-          {
-            user_id: userIds['user1@example.com'],
-            company_id: company1.id,
-            transaction_type: 'use',
-            amount: -500,
-            balance_after: 1500,
-            description: 'プロテイン購入'
+            amount: points,
+            balance_after: balance,
+            description: '早朝スイミング',
+            created_at: new Date(date.setHours(8, 30, 0, 0)).toISOString(),
+            expires_at: new Date(date.getTime() + 730 * 24 * 60 * 60 * 1000).toISOString()
+          });
+        }
+      }
+      
+      // 月間達成ボーナス
+      for (let i = 0; i < 3; i++) {
+        const monthsAgo = i + 1;
+        const bonusDate = new Date();
+        bonusDate.setMonth(bonusDate.getMonth() - monthsAgo);
+        
+        const bonus = 1000;
+        balance += bonus;
+        
+        transactions.push({
+          user_id: userIds['user3@example.com'],
+          company_id: company2.id,
+          transaction_type: 'earn',
+          amount: bonus,
+          balance_after: balance,
+          description: `${20 + i * 2}日達成ボーナス`,
+          created_at: bonusDate.toISOString(),
+          expires_at: new Date(bonusDate.getTime() + 730 * 24 * 60 * 60 * 1000).toISOString()
+        });
+      }
+      
+      // まだポイントは使っていない（貯めている）
+      
+      await supabase.from('point_transactions').insert(transactions);
+    }
+
+    console.log('\n✨ Database seeding completed successfully!');
+    
+    // ポイント残高の再計算と更新
+    console.log('\n🔄 Updating user points balances...');
+    for (const email of Object.keys(userIds)) {
+      const userId = userIds[email];
+      
+      // 各会社のポイント残高を計算
+      const { data: userCompanies } = await supabase
+        .from('user_memberships')
+        .select('company_id')
+        .eq('user_id', userId);
+      
+      if (userCompanies) {
+        for (const membership of userCompanies) {
+          const { data: transactions } = await supabase
+            .from('point_transactions')
+            .select('amount')
+            .eq('user_id', userId)
+            .eq('company_id', membership.company_id)
+            .order('created_at', { ascending: true });
+          
+          if (transactions && transactions.length > 0) {
+            const currentPoints = transactions.reduce((sum, t) => sum + t.amount, 0);
+            const totalEarned = transactions
+              .filter(t => t.amount > 0)
+              .reduce((sum, t) => sum + t.amount, 0);
+            const totalUsed = Math.abs(transactions
+              .filter(t => t.amount < 0)
+              .reduce((sum, t) => sum + t.amount, 0));
+            
+            await supabase
+              .from('user_points')
+              .update({
+                current_points: currentPoints,
+                total_earned: totalEarned,
+                total_used: totalUsed
+              })
+              .eq('user_id', userId)
+              .eq('company_id', membership.company_id);
           }
-        ]);
+        }
+      }
     }
 
     console.log('\n✨ Database seeding completed successfully!');
@@ -789,6 +1274,16 @@ async function seedDatabase(): Promise<void> {
       const { count } = await supabase.from(table).select('*', { count: 'exact', head: true });
       console.log(`${table}: ${count}`);
     }
+    
+    // テストユーザー情報を表示
+    console.log('\n👤 Test Users:');
+    console.log('=====================================');
+    users.forEach(user => {
+      console.log(`Email: ${user.email}`);
+      console.log(`Password: ${user.password}`);
+      console.log(`Name: ${user.metadata.name}`);
+      console.log('-------------------------------------');
+    });
 
   } catch (error) {
     console.error('\n❌ Error during seeding:', error);

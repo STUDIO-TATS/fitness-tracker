@@ -6,18 +6,28 @@ export interface TestUser {
 
 export const testUsers: TestUser[] = [
   {
-    email: 'testuser1@example.com',
-    password: 'Test1234!',
-    displayName: 'テストユーザー1',
+    email: 'user1@example.com',
+    password: 'testpass123',
+    displayName: '田中太郎',
   },
   {
-    email: 'admin@example.com',
-    password: 'Admin1234!',
-    displayName: '管理者',
+    email: 'user2@example.com',
+    password: 'testpass123',
+    displayName: '鈴木花子',
   },
   {
-    email: 'demo@example.com',
-    password: 'Demo1234!',
-    displayName: 'デモユーザー',
+    email: 'user3@example.com',
+    password: 'testpass123',
+    displayName: '佐藤次郎',
+  },
+  {
+    email: 'staff@fittracker.com',
+    password: 'testpass123',
+    displayName: 'スタッフ太郎',
+  },
+  {
+    email: 'admin@fittracker.com',
+    password: 'testpass123',
+    displayName: 'システム管理者',
   },
 ];

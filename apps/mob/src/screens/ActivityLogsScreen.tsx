@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,16 @@ import {
   TouchableOpacity,
   FlatList,
   SectionList,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { colors } from '../constants/colors';
 import { commonStyles, spacing, typography, layout, borderRadius, shadows } from '../constants/styles';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
+import { useI18n } from '../hooks/useI18n';
+import type { ActivityLog as DBActivityLog, Measurement, Goal } from '../types/database';
 
 interface ActivityLog {
   id: string;
@@ -28,73 +33,207 @@ interface DaySection {
 }
 
 export default function ActivityLogsScreen() {
+  const { session } = useAuth();
+  const { t } = useI18n();
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
-  
-  const [activities] = useState<DaySection[]>([
-    {
-      title: '今日',
-      data: [
-        {
-          id: '1',
-          title: '朝のワークアウト完了',
-          description: '上半身トレーニング 45分',
-          time: '08:30',
-          type: 'workout',
-          icon: 'barbell',
-          iconColor: colors.primary,
-        },
-        {
-          id: '2',
-          title: '朝食を記録',
-          description: 'タンパク質: 25g, カロリー: 450kcal',
-          time: '09:15',
-          type: 'meal',
-          icon: 'restaurant',
-          iconColor: colors.mint[500],
-        },
-        {
-          id: '3',
-          title: '体重測定',
-          description: '70.2 kg (-0.3kg)',
-          time: '07:00',
-          type: 'measurement',
-          icon: 'body',
-          iconColor: colors.purple[500],
-        },
-      ],
-    },
-    {
-      title: '昨日',
-      data: [
-        {
-          id: '4',
-          title: '週間目標達成！',
-          description: '3回のワークアウトを完了',
-          time: '20:00',
-          type: 'achievement',
-          icon: 'trophy',
-          iconColor: colors.yellow[500],
-        },
-        {
-          id: '5',
-          title: '夕方のランニング',
-          description: '5km, 28分',
-          time: '18:30',
-          type: 'workout',
-          icon: 'walk',
-          iconColor: colors.primary,
-        },
-      ],
-    },
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [activities, setActivities] = useState<DaySection[]>([]);
+
+  useEffect(() => {
+    fetchActivities();
+  }, [session, selectedFilter]);
+
+  const fetchActivities = async () => {
+    if (!session?.user?.id) {
+      // セッションがない場合はモックデータを使用
+      setActivities(getMockActivities());
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // アクティビティログを取得
+      const { data: activityLogs, error: activityError } = await supabase
+        .from('activity_logs')
+        .select(`
+          *,
+          facilities (
+            name,
+            facility_type
+          ),
+          activity_types (
+            name,
+            category
+          )
+        `)
+        .eq('user_id', session.user.id)
+        .order('check_in_time', { ascending: false })
+        .limit(50);
+
+      if (activityError) throw activityError;
+
+      // 測定記録を取得
+      const { data: measurements, error: measurementError } = await supabase
+        .from('measurements')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('measurement_date', { ascending: false })
+        .limit(10);
+
+      if (measurementError) throw measurementError;
+
+      // データを統合して表示用に変換
+      const combinedActivities = formatActivities(activityLogs || [], measurements || []);
+      setActivities(combinedActivities);
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+      Alert.alert(t('common.error'), t('common.dataLoadError'));
+      setActivities(getMockActivities());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatActivities = (logs: any[], measurements: any[]): DaySection[] => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const todayStr = today.toISOString().split('T')[0];
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    const sections: { [key: string]: ActivityLog[] } = {
+      today: [],
+      yesterday: [],
+      older: []
+    };
+
+    // アクティビティログを処理
+    logs.forEach(log => {
+      const date = new Date(log.check_in_time);
+      const dateStr = date.toISOString().split('T')[0];
+      const timeStr = date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
+      const activity: ActivityLog = {
+        id: log.id,
+        title: log.activity_types?.name || log.facilities?.name || 'ワークアウト',
+        description: `${log.duration_minutes || 0}分${log.calories_burned ? `, ${log.calories_burned}kcal` : ''}`,
+        time: timeStr,
+        type: 'workout',
+        icon: 'barbell',
+        iconColor: colors.primary,
+      };
+
+      if (dateStr === todayStr) {
+        sections.today.push(activity);
+      } else if (dateStr === yesterdayStr) {
+        sections.yesterday.push(activity);
+      } else {
+        sections.older.push(activity);
+      }
+    });
+
+    // 測定記録を処理
+    measurements.forEach(measurement => {
+      const date = new Date(measurement.measurement_date);
+      const dateStr = date.toISOString().split('T')[0];
+      const timeStr = date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
+      const activity: ActivityLog = {
+        id: measurement.id,
+        title: '体重測定',
+        description: `${measurement.weight}kg${measurement.body_fat_percentage ? `, 体脂肪率: ${measurement.body_fat_percentage}%` : ''}`,
+        time: timeStr,
+        type: 'measurement',
+        icon: 'body',
+        iconColor: colors.purple[500],
+      };
+
+      if (dateStr === todayStr) {
+        sections.today.push(activity);
+      } else if (dateStr === yesterdayStr) {
+        sections.yesterday.push(activity);
+      } else {
+        sections.older.push(activity);
+      }
+    });
+
+    // セクションを作成
+    const result: DaySection[] = [];
+    if (sections.today.length > 0) {
+      result.push({ title: t('common.today'), data: sections.today });
+    }
+    if (sections.yesterday.length > 0) {
+      result.push({ title: t('common.yesterday'), data: sections.yesterday });
+    }
+    if (sections.older.length > 0) {
+      result.push({ title: t('common.older'), data: sections.older });
+    }
+
+    return result;
+  };
+
+  const getMockActivities = (): DaySection[] => {
+    return [
+      {
+        title: t('common.today'),
+        data: [
+          {
+            id: '1',
+            title: '朝のワークアウト完了',
+            description: '上半身トレーニング 45分',
+            time: '08:30',
+            type: 'workout',
+            icon: 'barbell',
+            iconColor: colors.primary,
+          },
+          {
+            id: '2',
+            title: '体重測定',
+            description: '70.2 kg (-0.3kg)',
+            time: '07:00',
+            type: 'measurement',
+            icon: 'body',
+            iconColor: colors.purple[500],
+          },
+        ],
+      },
+      {
+        title: t('common.yesterday'),
+        data: [
+          {
+            id: '3',
+            title: '夕方のランニング',
+            description: '5km, 28分',
+            time: '18:30',
+            type: 'workout',
+            icon: 'walk',
+            iconColor: colors.primary,
+          },
+        ],
+      },
+    ];
+  };
 
   const filters = [
-    { id: 'all', label: 'すべて', icon: 'apps' },
-    { id: 'workout', label: 'ワークアウト', icon: 'barbell' },
-    { id: 'meal', label: '食事', icon: 'restaurant' },
-    { id: 'measurement', label: '測定', icon: 'body' },
-    { id: 'achievement', label: '達成', icon: 'trophy' },
+    { id: 'all', label: t('activityLogs.filterAll'), icon: 'apps' },
+    { id: 'workout', label: t('activityLogs.filterWorkout'), icon: 'barbell' },
+    { id: 'measurement', label: t('activityLogs.filterMeasurement'), icon: 'body' },
   ];
+
+  // フィルタリングされたアクティビティを取得
+  const getFilteredActivities = (): DaySection[] => {
+    if (selectedFilter === 'all') {
+      return activities;
+    }
+
+    return activities.map(section => ({
+      ...section,
+      data: section.data.filter(item => item.type === selectedFilter)
+    })).filter(section => section.data.length > 0);
+  };
 
   const renderActivityItem = ({ item }: { item: ActivityLog }) => (
     <TouchableOpacity style={styles.activityItem}>
@@ -119,7 +258,7 @@ export default function ActivityLogsScreen() {
   return (
     <ScreenWrapper backgroundColor={colors.gray[50]}>
       <View style={styles.header}>
-        <Text style={styles.screenTitle}>アクティビティログ</Text>
+        <Text style={styles.screenTitle}>{t('navigation.activityLogs')}</Text>
       </View>
 
       <View style={styles.filterContainer}>
@@ -155,15 +294,26 @@ export default function ActivityLogsScreen() {
         />
       </View>
 
-      <SectionList
-        sections={activities}
-        renderItem={renderActivityItem}
-        renderSectionHeader={renderSectionHeader}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        stickySectionHeadersEnabled={false}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
+        </View>
+      ) : (
+        <SectionList
+          sections={getFilteredActivities()}
+          renderItem={renderActivityItem}
+          renderSectionHeader={renderSectionHeader}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          stickySectionHeadersEnabled={false}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>{t('activityLogs.noData')}</Text>
+            </View>
+          }
+        />
+      )}
     </ScreenWrapper>
   );
 }
@@ -251,7 +401,24 @@ const styles = StyleSheet.create({
     color: colors.gray[600],
     marginTop: spacing.xs,
   },
-  yellow: {
-    500: '#EAB308',
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: spacing.xxxl,
+  },
+  loadingText: {
+    ...typography.body,
+    color: colors.gray[500],
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: spacing.xxxl,
+  },
+  emptyText: {
+    ...typography.body,
+    color: colors.gray[500],
   },
 });

@@ -15,6 +15,11 @@ export class MockAuthService {
     }
   }
 
+  async signUp({ email, password }: { email: string; password: string }) {
+    // モック実装: 新規登録もログインと同じ処理
+    return this.signInWithPassword({ email, password });
+  }
+
   async signInWithPassword({ email, password }: { email: string; password: string }) {
     // テストユーザーの検証
     const validUsers = [

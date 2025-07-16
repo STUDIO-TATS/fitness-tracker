@@ -3,7 +3,7 @@ import './src/i18n'; // i18nを初期化
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import DrawerNavigator from './src/navigation/DrawerNavigator';
+import RootNavigator from './src/navigation/RootNavigator';
 import AuthScreen from './src/screens/AuthScreen';
 import LoadingScreen from './src/screens/LoadingScreen';
 import { useAuth } from './src/hooks/useAuth';
@@ -20,7 +20,7 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      {session ? <DrawerNavigator /> : <AuthScreen />}
+      {session ? <RootNavigator /> : <AuthScreen />}
       <StatusBar style="light" />
     </NavigationContainer>
   );

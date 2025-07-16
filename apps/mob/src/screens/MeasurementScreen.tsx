@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,15 +6,22 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { ScreenWrapper } from '../components/ScreenWrapper';
-import { colors } from '../constants/colors';
-import { icons } from '../constants/icons';
-import { theme } from '../constants/theme';
-import { useI18n } from '../hooks/useI18n';
-import { commonStyles, spacing, typography, layout, borderRadius, shadows } from '../constants/styles';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { ScreenWrapper } from "../components/ScreenWrapper";
+import { colors } from "../constants/colors";
+import { icons } from "../constants/icons";
+import { theme } from "../constants/theme";
+import { useI18n } from "../hooks/useI18n";
+import {
+  commonStyles,
+  spacing,
+  typography,
+  layout,
+  borderRadius,
+  shadows,
+} from "../constants/styles";
 
 interface Measurement {
   id: string;
@@ -27,112 +34,143 @@ interface Measurement {
 export default function MeasurementScreen() {
   const { t } = useI18n();
   const [measurements] = useState<Measurement[]>([
-    { id: '1', date: '2024-01-15', weight: 70.5, bodyFat: 22.3, muscle: 35.2 },
-    { id: '2', date: '2024-01-08', weight: 71.2, bodyFat: 22.8, muscle: 35.0 },
-    { id: '3', date: '2024-01-01', weight: 72.0, bodyFat: 23.5, muscle: 34.8 },
+    { id: "1", date: "2024-01-15", weight: 70.5, bodyFat: 22.3, muscle: 35.2 },
+    { id: "2", date: "2024-01-08", weight: 71.2, bodyFat: 22.8, muscle: 35.0 },
+    { id: "3", date: "2024-01-01", weight: 72.0, bodyFat: 23.5, muscle: 34.8 },
   ]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [weight, setWeight] = useState('');
-  const [bodyFat, setBodyFat] = useState('');
-  const [muscle, setMuscle] = useState('');
+  const [weight, setWeight] = useState("");
+  const [bodyFat, setBodyFat] = useState("");
+  const [muscle, setMuscle] = useState("");
 
   const latestMeasurement = measurements[0];
   const previousMeasurement = measurements[1];
-  
-  const weightChange = latestMeasurement && previousMeasurement
-    ? latestMeasurement.weight - previousMeasurement.weight
-    : 0;
+
+  const weightChange =
+    latestMeasurement && previousMeasurement
+      ? latestMeasurement.weight - previousMeasurement.weight
+      : 0;
 
   const handleSave = () => {
     // ここで新しい測定データを保存
     setModalVisible(false);
-    setWeight('');
-    setBodyFat('');
-    setMuscle('');
+    setWeight("");
+    setBodyFat("");
+    setMuscle("");
   };
 
   return (
-    <ScreenWrapper backgroundColor={theme.colors.background.tertiary} scrollable>
-        <View style={styles.header}>
-          <Text style={styles.screenTitle}>{t('navigation.measurement')}</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setModalVisible(true)}
+    <ScreenWrapper
+      backgroundColor={theme.colors.background.tertiary}
+      scrollable
+    >
+      <View style={styles.header}>
+        <Text style={styles.screenTitle}>{t("navigation.measurement")}</Text>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => setModalVisible(true)}
+        >
+          <LinearGradient
+            colors={theme.colors.gradient.mint}
+            style={styles.addButtonGradient}
           >
-            <LinearGradient
-              colors={theme.colors.gradient.mint}
-              style={styles.addButtonGradient}
-            >
-              <Ionicons name={icons.status.add} size={24} color={theme.colors.text.inverse} />
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+            <Ionicons
+              name={icons.status.add}
+              size={24}
+              color={theme.colors.text.inverse}
+            />
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
 
-        {latestMeasurement && (
-          <View style={styles.currentStats}>
-            <View style={styles.mainStat}>
-              <Text style={styles.mainStatLabel}>現在の体重</Text>
-              <Text style={styles.mainStatValue}>{latestMeasurement.weight} kg</Text>
-              <View style={styles.changeIndicator}>
-                <Ionicons
-                  name={weightChange >= 0 ? 'arrow-up' : 'arrow-down'}
-                  size={16}
-                  color={weightChange >= 0 ? colors.pink[500] : colors.mint[500]}
-                />
-                <Text
-                  style={[
-                    styles.changeText,
-                    { color: weightChange >= 0 ? colors.pink[500] : colors.mint[500] },
-                  ]}
-                >
-                  {Math.abs(weightChange).toFixed(1)} kg
-                </Text>
-              </View>
+      {latestMeasurement && (
+        <View style={styles.currentStats}>
+          <View style={styles.mainStat}>
+            <Text style={styles.mainStatLabel}>{t("measurement.weight")}</Text>
+            <Text style={styles.mainStatValue}>
+              {latestMeasurement.weight} kg
+            </Text>
+            <View style={styles.changeIndicator}>
+              <Ionicons
+                name={weightChange >= 0 ? "arrow-up" : "arrow-down"}
+                size={16}
+                color={weightChange >= 0 ? colors.pink[500] : colors.mint[500]}
+              />
+              <Text
+                style={[
+                  styles.changeText,
+                  {
+                    color:
+                      weightChange >= 0 ? colors.pink[500] : colors.mint[500],
+                  },
+                ]}
+              >
+                {Math.abs(weightChange).toFixed(1)} kg
+              </Text>
             </View>
+          </View>
 
-            <View style={styles.subStats}>
-              {latestMeasurement.bodyFat && (
-                <View style={styles.subStat}>
-                  <LinearGradient
-                    colors={theme.colors.gradient.aurora}
-                    style={styles.subStatGradient}
-                  >
-                    <Ionicons name={icons.facility.pool} size={24} color={theme.colors.text.inverse} />
-                    <Text style={styles.subStatLabel}>{t('measurement.bodyFat')}</Text>
-                    <Text style={styles.subStatValue}>{latestMeasurement.bodyFat}%</Text>
-                  </LinearGradient>
-                </View>
-              )}
-              {latestMeasurement.muscle && (
-                <View style={styles.subStat}>
-                  <LinearGradient
-                    colors={theme.colors.gradient.mint}
-                    style={styles.subStatGradient}
-                  >
-                    <Ionicons name={icons.navigation.workoutOutline} size={24} color={theme.colors.text.inverse} />
-                    <Text style={styles.subStatLabel}>{t('measurement.muscleMass')}</Text>
-                    <Text style={styles.subStatValue}>{latestMeasurement.muscle} kg</Text>
-                  </LinearGradient>
-                </View>
+          <View style={styles.subStats}>
+            {latestMeasurement.bodyFat && (
+              <View style={styles.subStat}>
+                <LinearGradient
+                  colors={theme.colors.gradient.aurora}
+                  style={styles.subStatGradient}
+                >
+                  <Ionicons
+                    name={icons.facility.pool}
+                    size={24}
+                    color={theme.colors.text.inverse}
+                  />
+                  <Text style={styles.subStatLabel}>
+                    {t("measurement.bodyFat")}
+                  </Text>
+                  <Text style={styles.subStatValue}>
+                    {latestMeasurement.bodyFat}%
+                  </Text>
+                </LinearGradient>
+              </View>
+            )}
+            {latestMeasurement.muscle && (
+              <View style={styles.subStat}>
+                <LinearGradient
+                  colors={theme.colors.gradient.mint}
+                  style={styles.subStatGradient}
+                >
+                  <Ionicons
+                    name={icons.navigation.workoutOutline}
+                    size={24}
+                    color={theme.colors.text.inverse}
+                  />
+                  <Text style={styles.subStatLabel}>
+                    {t("measurement.muscleMass")}
+                  </Text>
+                  <Text style={styles.subStatValue}>
+                    {latestMeasurement.muscle} kg
+                  </Text>
+                </LinearGradient>
+              </View>
+            )}
+          </View>
+        </View>
+      )}
+
+      <View style={styles.historySection}>
+        <Text style={styles.sectionTitle}>{t("measurement.history")}</Text>
+        {measurements.map((measurement) => (
+          <View key={measurement.id} style={styles.historyItem}>
+            <Text style={styles.historyDate}>{measurement.date}</Text>
+            <View style={styles.historyStats}>
+              <Text style={styles.historyWeight}>{measurement.weight} kg</Text>
+              {measurement.bodyFat && (
+                <Text style={styles.historySubStat}>
+                  {t("measurement.bodyFat")} {measurement.bodyFat}%
+                </Text>
               )}
             </View>
           </View>
-        )}
-
-        <View style={styles.historySection}>
-          <Text style={styles.sectionTitle}>{t('measurement.history')}</Text>
-          {measurements.map((measurement) => (
-            <View key={measurement.id} style={styles.historyItem}>
-              <Text style={styles.historyDate}>{measurement.date}</Text>
-              <View style={styles.historyStats}>
-                <Text style={styles.historyWeight}>{measurement.weight} kg</Text>
-                {measurement.bodyFat && (
-                  <Text style={styles.historySubStat}>体脂肪 {measurement.bodyFat}%</Text>
-                )}
-              </View>
-            </View>
-          ))}
-        </View>
+        ))}
+      </View>
 
       <Modal
         animationType="slide"
@@ -143,14 +181,16 @@ export default function MeasurementScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{t('measurement.record')}</Text>
+              <Text style={styles.modalTitle}>{t("measurement.record")}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <Ionicons name="close" size={24} color={colors.gray[600]} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>{t('measurement.weight')} ({t('measurement.kg')})</Text>
+              <Text style={styles.inputLabel}>
+                {t("measurement.weight")} ({t("measurement.kg")})
+              </Text>
               <TextInput
                 style={styles.input}
                 placeholder="70.5"
@@ -162,7 +202,9 @@ export default function MeasurementScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>{t('measurement.bodyFat')} ({t('measurement.percent')})</Text>
+              <Text style={styles.inputLabel}>
+                {t("measurement.bodyFat")} ({t("measurement.percent")})
+              </Text>
               <TextInput
                 style={styles.input}
                 placeholder="22.5"
@@ -174,7 +216,9 @@ export default function MeasurementScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>{t('measurement.muscleMass')} ({t('measurement.kg')})</Text>
+              <Text style={styles.inputLabel}>
+                {t("measurement.muscleMass")} ({t("measurement.kg")})
+              </Text>
               <TextInput
                 style={styles.input}
                 placeholder="35.0"
@@ -190,14 +234,16 @@ export default function MeasurementScreen() {
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
+                <Text style={styles.cancelButtonText}>
+                  {t("common.cancel")}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={handleSave}
               >
-                <Text style={styles.saveButtonText}>{t('common.save')}</Text>
+                <Text style={styles.saveButtonText}>{t("common.save")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -210,9 +256,9 @@ export default function MeasurementScreen() {
 const styles = StyleSheet.create({
   header: {
     ...commonStyles.screenHeader,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   screenTitle: {
     ...commonStyles.screenTitle,
@@ -222,13 +268,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: theme.borderRadius.full,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   addButtonGradient: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
   },
   currentStats: {
     paddingHorizontal: layout.screenPadding,
@@ -237,7 +283,7 @@ const styles = StyleSheet.create({
     ...commonStyles.card,
     borderRadius: borderRadius.xl,
     padding: spacing.xxl,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: spacing.lg,
     ...shadows.md,
   },
@@ -248,33 +294,33 @@ const styles = StyleSheet.create({
   },
   mainStatValue: {
     fontSize: 48,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.gray[900],
   },
   changeIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: spacing.sm,
   },
   changeText: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: spacing.xs,
   },
   subStats: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.md,
   },
   subStat: {
     flex: 1,
     borderRadius: theme.borderRadius.xl,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 0,
     ...theme.shadows.md,
   },
   subStatGradient: {
     padding: theme.spacing.lg,
-    alignItems: 'center',
+    alignItems: "center",
   },
   subStatLabel: {
     ...typography.small,
@@ -301,9 +347,9 @@ const styles = StyleSheet.create({
   },
   historyItem: {
     ...commonStyles.listItem,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: spacing.xl,
   },
   historyDate: {
@@ -311,7 +357,7 @@ const styles = StyleSheet.create({
     color: colors.gray[600],
   },
   historyStats: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   historyWeight: {
     ...typography.cardTitle,
@@ -324,8 +370,8 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
     backgroundColor: colors.white,
@@ -335,9 +381,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxxl + spacing.sm,
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: spacing.xxl,
   },
   modalTitle: {
@@ -349,7 +395,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.gray[700],
     marginBottom: spacing.sm,
   },
@@ -361,7 +407,7 @@ const styles = StyleSheet.create({
     color: colors.gray[900],
   },
   modalActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.md,
     marginTop: spacing.md,
   },
@@ -369,7 +415,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: spacing.lg,
     borderRadius: borderRadius.sm,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cancelButton: {
     backgroundColor: colors.gray[200],
@@ -377,7 +423,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     ...typography.body,
     color: colors.gray[700],
-    fontWeight: '600',
+    fontWeight: "600",
   },
   saveButton: {
     backgroundColor: colors.mint[500],
@@ -385,6 +431,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     ...typography.body,
     color: colors.white,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

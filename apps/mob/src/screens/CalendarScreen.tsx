@@ -11,6 +11,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { colors } from '../constants/colors';
 import { commonStyles, spacing, typography, layout, borderRadius, shadows } from '../constants/styles';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
+import { theme } from '../constants/theme';
 
 interface Activity {
   id: string;
@@ -34,10 +37,86 @@ export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [activitiesData, setActivitiesData] = useState<{ [key: string]: DayActivity }>({});
+  const [loading, setLoading] = useState(true);
+  const { session } = useAuth();
 
   useEffect(() => {
-    generateMockData();
-  }, [currentDate]);
+    if (session?.user?.id) {
+      fetchActivities();
+    } else {
+      generateMockData();
+    }
+  }, [currentDate, session]);
+
+  const fetchActivities = async () => {
+    try {
+      setLoading(true);
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      
+      // 月の開始日と終了日を計算
+      const startDate = new Date(year, month, 1);
+      const endDate = new Date(year, month + 1, 0);
+      
+      // Supabaseからアクティビティログを取得
+      const { data: activities, error } = await supabase
+        .from('activity_logs')
+        .select(`
+          *,
+          facilities (name, facility_type),
+          activity_types (name, category)
+        `)
+        .eq('user_id', session?.user?.id)
+        .gte('check_in_time', startDate.toISOString())
+        .lte('check_in_time', endDate.toISOString())
+        .order('check_in_time', { ascending: true });
+
+      if (error) throw error;
+
+      // データを日付ごとにグループ化
+      const groupedData: { [key: string]: DayActivity } = {};
+      
+      if (activities) {
+        activities.forEach(activity => {
+          const date = new Date(activity.check_in_time);
+          const dateKey = formatDateKey(date);
+          
+          if (!groupedData[dateKey]) {
+            groupedData[dateKey] = {
+              date: dateKey,
+              activities: [],
+              totalDuration: 0,
+              totalCalories: 0,
+            };
+          }
+          
+          const activityData: Activity = {
+            id: activity.id,
+            type: activity.activity_types?.name || 'ワークアウト',
+            duration: activity.duration_minutes || 0,
+            facility: activity.facilities?.name || '施設名不明',
+            calories: activity.calories_burned || 0,
+            notes: activity.notes,
+            time: new Date(activity.check_in_time).toLocaleTimeString('ja-JP', { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            }),
+          };
+          
+          groupedData[dateKey].activities.push(activityData);
+          groupedData[dateKey].totalDuration += activityData.duration;
+          groupedData[dateKey].totalCalories += activityData.calories;
+        });
+      }
+      
+      setActivitiesData(groupedData);
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+      generateMockData();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const generateMockData = () => {
     const data: { [key: string]: DayActivity } = {};
@@ -94,6 +173,7 @@ export default function CalendarScreen() {
     }
 
     setActivitiesData(data);
+    setLoading(false);
   };
 
   const getDaysInMonth = (date: Date) => {
@@ -174,10 +254,47 @@ export default function CalendarScreen() {
     }
   };
 
+  const getActivityIntensity = (date: Date) => {
+    const dateKey = formatDateKey(date);
+    const dayData = activitiesData[dateKey];
+    if (!dayData) return 0;
+
+    // 活動量に基づいて強度を計算（0-4のレベル）
+    const { totalDuration, totalCalories, activities } = dayData;
+    
+    if (totalDuration >= 120 || totalCalories >= 800 || activities.length >= 3) {
+      return 4; // 非常に高い
+    } else if (totalDuration >= 90 || totalCalories >= 600 || activities.length >= 2) {
+      return 3; // 高い
+    } else if (totalDuration >= 60 || totalCalories >= 400) {
+      return 2; // 中程度
+    } else if (totalDuration >= 30 || totalCalories >= 200) {
+      return 1; // 低い
+    }
+    return 0;
+  };
+
+  const getActivityBackgroundColor = (intensity: number) => {
+    // グラデーションのような濃淡を実現
+    switch (intensity) {
+      case 1:
+        return theme.colors.background.success + '40'; // 薄緑
+      case 2:
+        return theme.colors.action.primary + '40'; // 薄紫
+      case 3:
+        return theme.colors.action.primary + '80'; // 中濃度紫
+      case 4:
+        return theme.colors.action.primary; // 濃い紫
+      default:
+        return 'transparent';
+    }
+  };
+
   const renderDay = (date: Date) => {
     const isCurrentMonthDay = isCurrentMonth(date);
     const isDateToday = isToday(date);
     const hasActivityOnDate = hasActivity(date);
+    const activityIntensity = getActivityIntensity(date);
 
     return (
       <TouchableOpacity
@@ -186,7 +303,9 @@ export default function CalendarScreen() {
           styles.dayCell,
           !isCurrentMonthDay && styles.otherMonthDay,
           isDateToday && styles.today,
-          hasActivityOnDate && styles.hasActivity,
+          hasActivityOnDate && {
+            backgroundColor: getActivityBackgroundColor(activityIntensity),
+          },
         ]}
         onPress={() => handleDatePress(date)}
         disabled={!hasActivityOnDate}
@@ -196,14 +315,17 @@ export default function CalendarScreen() {
             styles.dayText,
             !isCurrentMonthDay && styles.otherMonthText,
             isDateToday && styles.todayText,
-            hasActivityOnDate && styles.activityText,
+            hasActivityOnDate && activityIntensity >= 3 && styles.highActivityText,
           ]}
         >
           {date.getDate()}
         </Text>
-        {hasActivityOnDate && (
+        {hasActivityOnDate && activityIntensity >= 2 && (
           <View style={styles.activityIndicator}>
-            <View style={styles.activityDot} />
+            <View style={[
+              styles.activityDot,
+              activityIntensity >= 3 && styles.highActivityDot,
+            ]} />
           </View>
         )}
       </TouchableOpacity>
@@ -243,7 +365,7 @@ export default function CalendarScreen() {
   const selectedDayData = selectedDate ? activitiesData[selectedDate] : null;
 
   return (
-    <ScreenWrapper backgroundColor={colors.purple[50]} scrollable>
+    <ScreenWrapper backgroundColor={theme.colors.background.tertiary} scrollable>
       {/* ヘッダー */}
       <View style={styles.header}>
         <Text style={styles.screenTitle}>アクティビティカレンダー</Text>
@@ -376,11 +498,11 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   header: {
     padding: layout.screenPadding,
-    paddingBottom: spacing.md,
+    paddingBottom: theme.spacing.md,
   },
   screenTitle: {
     ...typography.screenTitle,
-    color: colors.purple[700],
+    color: theme.colors.text.primary,
   },
   monthNavigation: {
     flexDirection: 'row',
@@ -447,7 +569,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.purple[100],
   },
   hasActivity: {
-    backgroundColor: colors.primary + '20',
+    // 個別に背景色を設定するため削除
   },
   dayText: {
     ...typography.body,
@@ -465,6 +587,10 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: 'bold',
   },
+  highActivityText: {
+    color: colors.white,
+    fontWeight: 'bold',
+  },
   activityIndicator: {
     position: 'absolute',
     bottom: 4,
@@ -475,6 +601,9 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     backgroundColor: colors.mint[500],
+  },
+  highActivityDot: {
+    backgroundColor: colors.white,
   },
   statsContainer: {
     flexDirection: 'row',

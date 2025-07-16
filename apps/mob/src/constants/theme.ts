@@ -94,12 +94,15 @@ export const semanticColors = {
 
   // グラデーション
   gradient: {
-    primary: ['#E879F9', '#F0ABFC'],
-    secondary: ['#F472B6', '#F9A8D4'],
-    success: ['#10B981', '#34D399'],
-    sunset: ['#F472B6', '#F9A8D4', '#FBCFE8'],
-    aurora: ['#E879F9', '#C084FC', '#A855F7'],
-    mint: ['#10B981', '#34D399', '#6EE7B7'],
+    primary: ['#E879F9', '#F0ABFC'] as [string, string],
+    secondary: ['#F472B6', '#F9A8D4'] as [string, string],
+    success: ['#10B981', '#34D399'] as [string, string],
+    sunset: ['#F472B6', '#F9A8D4', '#FBCFE8'] as [string, string, string],
+    aurora: ['#E879F9', '#C084FC', '#A855F7'] as [string, string, string],
+    mint: ['#10B981', '#34D399', '#6EE7B7'] as [string, string, string],
+    purple: ['#A78BFA', '#C4B5FD'] as [string, string],
+    warm: ['#FDE68A', '#FCA5A5'] as [string, string],
+    cool: ['#93C5FD', '#A5B4FC'] as [string, string],
   },
 };
 

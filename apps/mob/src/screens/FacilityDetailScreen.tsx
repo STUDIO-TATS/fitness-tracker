@@ -8,8 +8,8 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { DrawerScreenProps } from '@react-navigation/drawer';
+import { RootDrawerParamList } from '../types/navigation';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { colors } from '../constants/colors';
 import { commonStyles, spacing, typography, layout, borderRadius, shadows } from '../constants/styles';
@@ -22,8 +22,8 @@ interface FacilityDetail {
   phone: string;
   email: string;
   facility_type: string;
-  opening_hours: any;
-  features: any;
+  opening_hours: Record<string, string>;
+  features: Record<string, boolean>;
   company_id: string;
   qr_code: string;
   companies?: {
@@ -47,17 +47,7 @@ interface FacilityDetail {
   description?: string;
 }
 
-type RootStackParamList = {
-  FacilityDetail: { facility: FacilityDetail };
-};
-
-type FacilityDetailScreenRouteProp = RouteProp<RootStackParamList, 'FacilityDetail'>;
-type FacilityDetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'FacilityDetail'>;
-
-interface Props {
-  route: FacilityDetailScreenRouteProp;
-  navigation: FacilityDetailScreenNavigationProp;
-}
+type Props = DrawerScreenProps<RootDrawerParamList, 'FacilityDetail'>;
 
 export default function FacilityDetailScreen({ route, navigation }: Props) {
   const { facility } = route.params;

@@ -13,8 +13,10 @@ import {
 import { supabase } from '../lib/supabase';
 import { colors } from '../constants/colors';
 import { testUsers } from '../constants/testUsers';
+import { useI18n } from '../hooks/useI18n';
 
 export default function AuthScreen() {
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -22,7 +24,7 @@ export default function AuthScreen() {
 
   const handleAuth = async () => {
     if (!email || !password) {
-      Alert.alert('エラー', 'メールアドレスとパスワードを入力してください');
+      Alert.alert(t('common.error'), t('common.emailPasswordRequired'));
       return;
     }
 
@@ -34,7 +36,7 @@ export default function AuthScreen() {
           password,
         });
         if (error) throw error;
-        Alert.alert('成功', '確認メールを送信しました');
+        Alert.alert(t('common.success'), t('common.confirmEmailSent'));
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -44,9 +46,11 @@ export default function AuthScreen() {
       }
     } catch (error: any) {
       console.error('Auth error:', error);
+      console.error('Email:', email);
+      console.error('Password:', password);
       Alert.alert(
-        'エラー', 
-        `${error.message}\n\n詳細: ${JSON.stringify(error, null, 2)}`
+        'ログインエラー', 
+        error.message || '認証に失敗しました。メールアドレスとパスワードを確認してください。'
       );
     } finally {
       setIsLoading(false);

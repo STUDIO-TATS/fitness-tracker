@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { colors } from '../constants/colors';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { commonStyles, spacing, typography, layout, borderRadius, shadows } from '../constants/styles';
+import { useI18n } from '../hooks/useI18n';
+import { spacing, typography, layout, borderRadius, shadows } from '../constants/styles';
 
 export default function ProfileScreen() {
   const { session } = useAuth();
+  const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({
     displayName: '山田太郎',
@@ -40,7 +42,7 @@ export default function ProfileScreen() {
 
   const handleSave = () => {
     setIsEditing(false);
-    Alert.alert('保存完了', 'プロフィールを更新しました');
+    Alert.alert(t('common.success'), t('common.profileSaved'));
   };
 
   const handleCancel = () => {

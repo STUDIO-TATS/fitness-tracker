@@ -1,15 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
-import { CameraView, Camera } from 'expo-camera';
-import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../constants/colors';
-import { typography, spacing, borderRadius, layout } from '../constants/styles';
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { CameraView, Camera } from "expo-camera";
+import { Ionicons } from "@expo/vector-icons";
+import { colors } from "../constants/colors";
+import { typography, spacing, borderRadius, layout } from "../constants/styles";
 
 export default function QRScannerScreen() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -19,18 +13,24 @@ export default function QRScannerScreen() {
   useEffect(() => {
     (async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
+      setHasPermission(status === "granted");
     })();
   }, []);
 
-  const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
+  const handleBarCodeScanned = ({
+    type,
+    data,
+  }: {
+    type: string;
+    data: string;
+  }) => {
     setScanned(true);
     Alert.alert(
-      'QRコードをスキャンしました',
+      "QRコードをスキャンしました",
       `タイプ: ${type}\nデータ: ${data}`,
       [
-        { text: 'もう一度スキャン', onPress: () => setScanned(false) },
-        { text: 'OK', style: 'default' },
+        { text: "もう一度スキャン", onPress: () => setScanned(false) },
+        { text: "OK", style: "default" },
       ]
     );
   };
@@ -46,8 +46,10 @@ export default function QRScannerScreen() {
   if (hasPermission === false) {
     return (
       <View style={styles.container}>
-        <Ionicons name="camera-off" size={64} color={colors.gray[400]} />
-        <Text style={styles.permissionText}>カメラへのアクセスが拒否されました</Text>
+        <Ionicons name="camera" size={64} color={colors.gray[400]} />
+        <Text style={styles.permissionText}>
+          カメラへのアクセスが拒否されました
+        </Text>
         <Text style={styles.permissionSubtext}>
           設定からカメラの使用を許可してください
         </Text>
@@ -61,7 +63,7 @@ export default function QRScannerScreen() {
         style={StyleSheet.absoluteFillObject}
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
         barcodeScannerSettings={{
-          barcodeTypes: ['qr', 'ean13', 'ean8'],
+          barcodeTypes: ["qr", "ean13", "ean8"],
         }}
         enableTorch={torchOn}
       />
@@ -74,7 +76,7 @@ export default function QRScannerScreen() {
             onPress={() => setTorchOn(!torchOn)}
           >
             <Ionicons
-              name={torchOn ? 'flash' : 'flash-off'}
+              name={torchOn ? "flash" : "flash-off"}
               size={24}
               color={colors.white}
             />
@@ -88,9 +90,7 @@ export default function QRScannerScreen() {
           <View style={[styles.corner, styles.cornerBR]} />
         </View>
 
-        <Text style={styles.instruction}>
-          QRコードを枠内に配置してください
-        </Text>
+        <Text style={styles.instruction}>QRコードを枠内に配置してください</Text>
 
         {scanned && (
           <TouchableOpacity
@@ -109,30 +109,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.black,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   permissionText: {
     ...typography.cardTitle,
     color: colors.gray[600],
     marginTop: spacing.lg,
-    textAlign: 'center',
+    textAlign: "center",
   },
   permissionSubtext: {
     ...typography.small,
     color: colors.gray[500],
     marginTop: spacing.sm,
-    textAlign: 'center',
+    textAlign: "center",
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
     padding: layout.screenPadding,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: spacing.xxxl + spacing.sm,
   },
   title: {
@@ -144,18 +144,18 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: borderRadius.full,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   scanArea: {
     width: 250,
     height: 250,
-    alignSelf: 'center',
-    position: 'relative',
+    alignSelf: "center",
+    position: "relative",
   },
   corner: {
-    position: 'absolute',
+    position: "absolute",
     width: 40,
     height: 40,
     borderColor: colors.primary,
@@ -168,22 +168,22 @@ const styles = StyleSheet.create({
   cornerTR: {
     top: 0,
     right: 0,
-    transform: [{ rotate: '90deg' }],
+    transform: [{ rotate: "90deg" }],
   },
   cornerBL: {
     bottom: 0,
     left: 0,
-    transform: [{ rotate: '-90deg' }],
+    transform: [{ rotate: "-90deg" }],
   },
   cornerBR: {
     bottom: 0,
     right: 0,
-    transform: [{ rotate: '180deg' }],
+    transform: [{ rotate: "180deg" }],
   },
   instruction: {
     ...typography.body,
     color: colors.white,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: spacing.xxxl + spacing.sm,
   },
   rescanButton: {
@@ -191,12 +191,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xxl,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.xl,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginBottom: spacing.xxxl + spacing.sm,
   },
   rescanText: {
     ...typography.body,
     color: colors.white,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

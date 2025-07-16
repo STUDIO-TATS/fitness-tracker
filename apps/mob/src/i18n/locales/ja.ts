@@ -15,6 +15,19 @@ export default {
     yes: 'はい',
     no: 'いいえ',
     guest: 'ゲスト',
+    code: 'コード',
+    viewAll: 'すべて見る',
+    noData: 'データがありません',
+    success: '成功',
+    shareError: 'シェアに失敗しました',
+    profileSaved: 'プロフィールを更新しました',
+    emailPasswordRequired: 'メールアドレスとパスワードを入力してください',
+    confirmEmailSent: '確認メールを送信しました',
+    facilityDataError: '施設データの取得に失敗しました',
+    dataLoadError: 'データの読み込みに失敗しました',
+    today: '今日',
+    yesterday: '昨日',
+    older: 'それ以前',
   },
 
   // 認証
@@ -70,6 +83,13 @@ export default {
     minutes: '分',
     kcal: 'kcal',
     save: 'ワークアウトを保存',
+    monthlyCount: '今月のワークアウト',
+    weeklyAverage: '週平均時間',
+    sets: 'セット',
+    reps: '回',
+    moreExercises: 'その他のエクササイズ',
+    exercises: 'エクササイズ',
+    details: 'ワークアウト詳細',
     activities: {
       running: 'ランニング',
       walking: 'ウォーキング',
@@ -145,6 +165,15 @@ export default {
     expiring: '期限切れ間近',
     rewards: '特典と交換',
     expirationDate: '有効期限',
+  },
+  
+  // アクティビティログ
+  activityLogs: {
+    title: 'アクティビティログ',
+    filterAll: 'すべて',
+    filterWorkout: 'ワークアウト',
+    filterMeasurement: '測定',
+    noData: 'アクティビティがありません',
   },
 
   // カレンダー

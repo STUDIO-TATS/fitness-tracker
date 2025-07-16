@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
@@ -8,14 +8,21 @@ import {
   ScrollView,
   Alert,
   Modal,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { ScreenWrapper } from '../components/ScreenWrapper';
-import { colors } from '../constants/colors';
-import { useNotifications } from '../hooks/useNotifications';
-import { useI18n } from '../hooks/useI18n';
-import { commonStyles, spacing, typography, layout, borderRadius, shadows } from '../constants/styles';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { ScreenWrapper } from "../components/ScreenWrapper";
+import { colors } from "../constants/colors";
+import { useNotifications } from "../hooks/useNotifications";
+import { useI18n } from "../hooks/useI18n";
+import {
+  commonStyles,
+  spacing,
+  typography,
+  layout,
+  borderRadius,
+  shadows,
+} from "../constants/styles";
 
 export default function SettingsScreen() {
   const navigation = useNavigation();
@@ -24,15 +31,19 @@ export default function SettingsScreen() {
   const [darkMode, setDarkMode] = React.useState(false);
   const [biometric, setBiometric] = React.useState(false);
   const [languageModalVisible, setLanguageModalVisible] = React.useState(false);
-  const { scheduleNotification, scheduleDailyReminder, cancelAllNotifications } = useNotifications();
+  const {
+    scheduleNotification,
+    scheduleDailyReminder,
+    cancelAllNotifications,
+  } = useNotifications();
 
   const handleNotificationToggle = async (value: boolean) => {
     setNotifications(value);
     if (value) {
       // 通知を有効化 - テスト通知を送信
       await scheduleNotification(
-        t('settings.notificationEnabled'),
-        t('settings.notificationEnabledMsg'),
+        t("settings.notificationEnabled"),
+        t("settings.notificationEnabledMsg"),
         3
       );
       // 毎日のリマインダーを設定（例：朝8時）
@@ -45,32 +56,42 @@ export default function SettingsScreen() {
 
   const handleSettingPress = (item: any) => {
     switch (item.id) {
-      case 'help':
-        navigation.navigate('Help' as never);
+      case "help":
+        navigation.navigate("Help" as never);
         break;
-      case 'terms':
-        navigation.navigate('Terms' as never);
+      case "terms":
+        navigation.navigate("Terms" as never);
         break;
-      case 'privacy':
-        navigation.navigate('Privacy' as never);
+      case "privacy":
+        navigation.navigate("Privacy" as never);
         break;
-      case 'export':
-        Alert.alert(t('settings.dataExport'), t('settings.dataExportMsg'));
+      case "export":
+        Alert.alert(t("settings.dataExport"), t("settings.dataExportMsg"));
         break;
-      case 'clearCache':
+      case "clearCache":
         Alert.alert(
-          t('settings.clearCacheTitle'),
-          t('settings.clearCacheMsg'),
+          t("settings.clearCacheTitle"),
+          t("settings.clearCacheMsg"),
           [
-            { text: t('common.cancel'), style: 'cancel' },
-            { text: t('settings.clear'), onPress: () => Alert.alert(t('settings.completed'), t('settings.cacheCleared')) }
+            { text: t("common.cancel"), style: "cancel" },
+            {
+              text: t("settings.clear"),
+              onPress: () =>
+                Alert.alert(
+                  t("settings.completed"),
+                  t("settings.cacheCleared")
+                ),
+            },
           ]
         );
         break;
-      case 'emailNotifications':
-        Alert.alert(t('settings.emailNotifications'), t('settings.emailNotificationMsg'));
+      case "emailNotifications":
+        Alert.alert(
+          t("settings.emailNotifications"),
+          t("settings.emailNotificationMsg")
+        );
         break;
-      case 'language':
+      case "language":
         setLanguageModalVisible(true);
         break;
       default:
@@ -80,89 +101,91 @@ export default function SettingsScreen() {
 
   const settingSections = [
     {
-      title: t('settings.notifications'),
+      title: t("settings.notifications"),
       items: [
         {
-          id: 'pushNotifications',
-          icon: 'notifications',
-          label: t('settings.pushNotifications'),
+          id: "pushNotifications",
+          icon: "notifications",
+          label: t("settings.pushNotifications"),
           value: notifications,
           onValueChange: handleNotificationToggle,
-          type: 'switch',
+          type: "switch",
         },
         {
-          id: 'emailNotifications',
-          icon: 'mail',
-          label: t('settings.emailNotifications'),
-          type: 'link',
+          id: "emailNotifications",
+          icon: "mail",
+          label: t("settings.emailNotifications"),
+          type: "link",
         },
       ],
     },
     {
-      title: t('settings.appearance'),
+      title: t("settings.appearance"),
       items: [
         {
-          id: 'darkMode',
-          icon: 'moon',
-          label: t('settings.darkMode'),
+          id: "darkMode",
+          icon: "moon",
+          label: t("settings.darkMode"),
           value: darkMode,
           onValueChange: setDarkMode,
-          type: 'switch',
+          type: "switch",
         },
         {
-          id: 'biometric',
-          icon: 'finger-print',
-          label: t('settings.biometric'),
+          id: "biometric",
+          icon: "finger-print",
+          label: t("settings.biometric"),
           value: biometric,
           onValueChange: setBiometric,
-          type: 'switch',
+          type: "switch",
         },
         {
-          id: 'language',
-          icon: 'language',
-          label: t('settings.language'),
-          type: 'link',
-          value: availableLanguages.find(lang => lang.code === currentLanguage)?.name || currentLanguage,
-        },
-      ],
-    },
-    {
-      title: t('settings.dataManagement'),
-      items: [
-        {
-          id: 'export',
-          icon: 'cloud-download',
-          label: t('settings.exportData'),
-          type: 'link',
-        },
-        {
-          id: 'clearCache',
-          icon: 'trash',
-          label: t('settings.clearCache'),
-          type: 'link',
+          id: "language",
+          icon: "language",
+          label: t("settings.language"),
+          type: "link",
+          value:
+            availableLanguages.find((lang) => lang.code === currentLanguage)
+              ?.name || currentLanguage,
         },
       ],
     },
     {
-      title: t('settings.other'),
+      title: t("settings.dataManagement"),
       items: [
         {
-          id: 'help',
-          icon: 'help-circle',
-          label: t('settings.help'),
-          type: 'link',
+          id: "export",
+          icon: "cloud-download",
+          label: t("settings.exportData"),
+          type: "link",
         },
         {
-          id: 'terms',
-          icon: 'document-text',
-          label: t('settings.termsOfService'),
-          type: 'link',
+          id: "clearCache",
+          icon: "trash",
+          label: t("settings.clearCache"),
+          type: "link",
+        },
+      ],
+    },
+    {
+      title: t("settings.other"),
+      items: [
+        {
+          id: "help",
+          icon: "help-circle",
+          label: t("settings.help"),
+          type: "link",
         },
         {
-          id: 'privacy',
-          icon: 'shield-checkmark',
-          label: t('settings.privacyPolicy'),
-          type: 'link',
+          id: "terms",
+          icon: "document-text",
+          label: t("settings.termsOfService"),
+          type: "link",
+        },
+        {
+          id: "privacy",
+          icon: "shield-checkmark",
+          label: t("settings.privacyPolicy"),
+          type: "link",
         },
       ],
     },
@@ -171,7 +194,7 @@ export default function SettingsScreen() {
   return (
     <ScreenWrapper backgroundColor={colors.gray[50]} scrollable>
       <View style={styles.header}>
-        <Text style={styles.screenTitle}>{t('settings.title')}</Text>
+        <Text style={styles.screenTitle}>{t("settings.title")}</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -186,8 +209,10 @@ export default function SettingsScreen() {
                     styles.settingItem,
                     itemIndex === section.items.length - 1 && styles.lastItem,
                   ]}
-                  disabled={item.type === 'switch'}
-                  onPress={() => item.type === 'link' && handleSettingPress(item)}
+                  disabled={item.type === "switch"}
+                  onPress={() =>
+                    item.type === "link" && handleSettingPress(item)
+                  }
                 >
                   <View style={styles.settingLeft}>
                     <Ionicons
@@ -197,10 +222,10 @@ export default function SettingsScreen() {
                     />
                     <Text style={styles.settingLabel}>{item.label}</Text>
                   </View>
-                  
-                  {item.type === 'switch' ? (
+
+                  {item.type === "switch" ? (
                     <Switch
-                      value={item.value}
+                      value={item.value as boolean}
                       onValueChange={item.onValueChange}
                       trackColor={{
                         false: colors.gray[200],
@@ -227,7 +252,7 @@ export default function SettingsScreen() {
         ))}
 
         <View style={styles.versionInfo}>
-          <Text style={styles.versionText}>{t('settings.version')} 1.0.0</Text>
+          <Text style={styles.versionText}>{t("settings.version")} 1.0.0</Text>
           <Text style={styles.versionSubtext}>Expo SDK 53</Text>
         </View>
       </ScrollView>
@@ -245,13 +270,16 @@ export default function SettingsScreen() {
           onPress={() => setLanguageModalVisible(false)}
         >
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{t('settings.selectLanguage')}</Text>
+            <Text style={styles.modalTitle}>
+              {t("settings.selectLanguage")}
+            </Text>
             {availableLanguages.map((language) => (
               <TouchableOpacity
                 key={language.code}
                 style={[
                   styles.languageItem,
-                  currentLanguage === language.code && styles.selectedLanguageItem,
+                  currentLanguage === language.code &&
+                    styles.selectedLanguageItem,
                 ]}
                 onPress={() => {
                   changeLanguage(language.code);
@@ -261,17 +289,14 @@ export default function SettingsScreen() {
                 <Text
                   style={[
                     styles.languageText,
-                    currentLanguage === language.code && styles.selectedLanguageText,
+                    currentLanguage === language.code &&
+                      styles.selectedLanguageText,
                   ]}
                 >
                   {language.name}
                 </Text>
                 {currentLanguage === language.code && (
-                  <Ionicons
-                    name="checkmark"
-                    size={24}
-                    color={colors.primary}
-                  />
+                  <Ionicons name="checkmark" size={24} color={colors.primary} />
                 )}
               </TouchableOpacity>
             ))}
@@ -294,9 +319,9 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...typography.small,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.gray[500],
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     marginBottom: spacing.sm,
     paddingHorizontal: layout.screenPadding,
   },
@@ -304,12 +329,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     marginHorizontal: layout.screenPadding,
     borderRadius: borderRadius.md,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.gray[100],
@@ -318,8 +343,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   settingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   settingLabel: {
@@ -328,8 +353,8 @@ const styles = StyleSheet.create({
     marginLeft: spacing.md,
   },
   settingRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   settingValue: {
     ...typography.small,
@@ -337,7 +362,7 @@ const styles = StyleSheet.create({
     marginRight: spacing.xs,
   },
   versionInfo: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: spacing.xxxl + spacing.sm,
     marginBottom: spacing.xxxl + spacing.sm,
   },
@@ -352,8 +377,8 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: colors.white,
@@ -362,17 +387,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.xl,
     paddingBottom: spacing.xxxl,
-    maxHeight: '50%',
+    maxHeight: "50%",
   },
   modalTitle: {
-    ...typography.h3,
+    ...typography.sectionTitle,
     color: colors.gray[900],
     marginBottom: spacing.lg,
   },
   languageItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.md,
     borderRadius: borderRadius.md,
@@ -387,6 +412,6 @@ const styles = StyleSheet.create({
   },
   selectedLanguageText: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
