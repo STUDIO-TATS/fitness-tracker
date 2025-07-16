@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  ScrollView,
   Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -53,8 +52,7 @@ export default function MeasurementScreen() {
   };
 
   return (
-    <ScreenWrapper backgroundColor={theme.colors.background.tertiary}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <ScreenWrapper backgroundColor={theme.colors.background.tertiary} scrollable>
         <View style={styles.header}>
           <Text style={styles.screenTitle}>{t('navigation.measurement')}</Text>
           <TouchableOpacity
@@ -122,7 +120,7 @@ export default function MeasurementScreen() {
         )}
 
         <View style={styles.historySection}>
-          <Text style={styles.sectionTitle}>測定履歴</Text>
+          <Text style={styles.sectionTitle}>{t('measurement.history')}</Text>
           {measurements.map((measurement) => (
             <View key={measurement.id} style={styles.historyItem}>
               <Text style={styles.historyDate}>{measurement.date}</Text>
@@ -135,7 +133,6 @@ export default function MeasurementScreen() {
             </View>
           ))}
         </View>
-      </ScrollView>
 
       <Modal
         animationType="slide"
@@ -146,18 +143,18 @@ export default function MeasurementScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>新しい測定を記録</Text>
+              <Text style={styles.modalTitle}>{t('measurement.record')}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <Ionicons name="close" size={24} color={colors.gray[600]} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>体重 (kg)</Text>
+              <Text style={styles.inputLabel}>{t('measurement.weight')} ({t('measurement.kg')})</Text>
               <TextInput
                 style={styles.input}
                 placeholder="70.5"
-                placeholderTextColor={colors.gray[400]}
+                placeholderTextColor={theme.colors.text.tertiary}
                 value={weight}
                 onChangeText={setWeight}
                 keyboardType="numeric"
@@ -165,11 +162,11 @@ export default function MeasurementScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>体脂肪率 (%)</Text>
+              <Text style={styles.inputLabel}>{t('measurement.bodyFat')} ({t('measurement.percent')})</Text>
               <TextInput
                 style={styles.input}
                 placeholder="22.5"
-                placeholderTextColor={colors.gray[400]}
+                placeholderTextColor={theme.colors.text.tertiary}
                 value={bodyFat}
                 onChangeText={setBodyFat}
                 keyboardType="numeric"
@@ -177,11 +174,11 @@ export default function MeasurementScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>筋肉量 (kg)</Text>
+              <Text style={styles.inputLabel}>{t('measurement.muscleMass')} ({t('measurement.kg')})</Text>
               <TextInput
                 style={styles.input}
                 placeholder="35.0"
-                placeholderTextColor={colors.gray[400]}
+                placeholderTextColor={theme.colors.text.tertiary}
                 value={muscle}
                 onChangeText={setMuscle}
                 keyboardType="numeric"
@@ -193,14 +190,14 @@ export default function MeasurementScreen() {
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.cancelButtonText}>キャンセル</Text>
+                <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={handleSave}
               >
-                <Text style={styles.saveButtonText}>保存</Text>
+                <Text style={styles.saveButtonText}>{t('common.save')}</Text>
               </TouchableOpacity>
             </View>
           </View>
