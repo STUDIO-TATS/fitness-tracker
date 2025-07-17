@@ -91,13 +91,14 @@ export default function MeasurementInputScreen() {
     try {
       const measurementData: any = {
         user_id: user.id,
-        measurement_date: isEditMode && existingData?.date 
-          ? existingData.date 
-          : new Date().toISOString().split("T")[0], // YYYY-MM-DD
+        measurement_date:
+          isEditMode && existingData?.date
+            ? existingData.date
+            : new Date().toISOString().split("T")[0], // YYYY-MM-DD
         weight: weight.trim() ? parseFloat(weight) : null,
         body_fat_percentage: bodyFat.trim() ? parseFloat(bodyFat) : null,
         muscle_mass: muscle.trim() ? parseFloat(muscle) : null,
-        notes: isEditMode 
+        notes: isEditMode
           ? `測定記録更新 - ${new Date().toLocaleDateString("ja-JP")}`
           : `測定記録 - ${new Date().toLocaleDateString("ja-JP")}`,
       };
@@ -113,15 +114,14 @@ export default function MeasurementInputScreen() {
       let error;
       if (isEditMode && measurementId) {
         // 更新の場合
-        console.log('Updating measurement with ID:', measurementId);
         const { error: updateError } = await supabase
           .from("measurements")
           .update(measurementData)
-          .eq('id', measurementId);
+          .eq("id", measurementId);
         error = updateError;
       } else {
         // 新規作成の場合
-        console.log('Creating new measurement');
+        console.log("Creating new measurement");
         const { error: insertError } = await supabase
           .from("measurements")
           .insert([measurementData]);
@@ -130,19 +130,26 @@ export default function MeasurementInputScreen() {
 
       if (error) {
         console.error("Measurement save error:", error);
-        Alert.alert("エラー", 
-          isEditMode ? "測定記録の更新に失敗しました" : "測定記録の保存に失敗しました"
+        Alert.alert(
+          "エラー",
+          isEditMode
+            ? "測定記録の更新に失敗しました"
+            : "測定記録の保存に失敗しました"
         );
       } else {
-        Alert.alert("成功", 
+        Alert.alert(
+          "成功",
           isEditMode ? "測定記録を更新しました" : "測定記録を保存しました",
           [{ text: "OK", onPress: () => navigation.goBack() }]
         );
       }
     } catch (error) {
       console.error("Measurement save error:", error);
-      Alert.alert("エラー", 
-        isEditMode ? "測定記録の更新に失敗しました" : "測定記録の保存に失敗しました"
+      Alert.alert(
+        "エラー",
+        isEditMode
+          ? "測定記録の更新に失敗しました"
+          : "測定記録の保存に失敗しました"
       );
     } finally {
       setSaving(false);

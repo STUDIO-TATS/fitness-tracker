@@ -2,6 +2,7 @@ import 'react-native-gesture-handler';
 import './src/i18n'; // i18nを初期化
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
+import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import RootNavigator from './src/navigation/RootNavigator';
 import AuthScreen from './src/screens/AuthScreen';

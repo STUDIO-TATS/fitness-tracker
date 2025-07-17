@@ -1,32 +1,114 @@
 {
   "expo": {
-    "name": "mob",
-    "slug": "mob",
+    "name": "Fitness Tracker",
+    "slug": "fitness-tracker",
+    "description": "健康的な毎日をサポートするフィットネストラッカーアプリ",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "scheme": "fitness-tracker",
+    "primaryColor": "#22c55e",
+    "privacy": "public",
+    "platforms": ["ios", "android", "web"],
+    "githubUrl": "https://github.com/your-username/fitness-tracker",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fitnessapp.tracker",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "QRコードスキャンとプロフィール写真撮影のためにカメラを使用します",
+        "NSLocationWhenInUseUsageDescription": "近くのフィットネス施設を検索するために位置情報を使用します",
+        "NSPhotoLibraryUsageDescription": "プロフィール写真を選択するために写真ライブラリにアクセスします"
+      },
+      "associatedDomains": ["applinks:fitness-tracker.app"]
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "package": "com.fitnessapp.tracker",
+      "versionCode": 1,
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "fitness-tracker.app"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "Fitness Tracker",
+      "shortName": "FitnessApp",
+      "lang": "ja",
+      "scope": "/",
+      "themeColor": "#22c55e",
+      "backgroundColor": "#ffffff",
+      "display": "standalone",
+      "orientation": "portrait",
+      "startUrl": "/",
+      "bundler": "metro"
+    },
+    "notification": {
+      "icon": "./assets/icon.png",
+      "color": "#22c55e"
+    },
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 10000
+    },
+    "locales": {
+      "ja": {
+        "name": "フィットネストラッカー",
+        "description": "健康的な毎日をサポートするフィットネストラッカーアプリ"
+      },
+      "en": {
+        "name": "Fitness Tracker", 
+        "description": "A fitness tracking app to support your healthy daily life"
+      }
+    },
+    "hooks": {
+      "postPublish": []
     },
     "plugins": [
-      "expo-font"
-    ]
+      "expo-font",
+      "expo-camera",
+      "expo-location",
+      "expo-notifications",
+      [
+        "expo-barcode-scanner",
+        {
+          "cameraPermission": "QRコードスキャンのためにカメラを使用します"
+        }
+      ]
+    ],
   }
 }
