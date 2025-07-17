@@ -663,25 +663,47 @@ export default function MeasurementScreen() {
             <Text style={styles.sectionTitle}>{t("measurement.history")}</Text>
           </View>
           {measurements.map((measurement) => (
-            <View key={measurement.id} style={styles.historyItem}>
-              <Text style={styles.historyDate}>{measurement.date}</Text>
-              <View style={styles.historyStats}>
-                <Text style={styles.historyWeight}>
-                  {measurement.weight} kg
-                </Text>
-                {measurement.bodyFat && (
-                  <Text style={styles.historySubStat}>
-                    {t("measurement.bodyFat")} {measurement.bodyFat}%
+            <TouchableOpacity 
+              key={measurement.id} 
+              style={styles.historyItem}
+              onPress={() => navigation.navigate('MeasurementInput', { 
+                editMode: true, 
+                measurementId: measurement.id,
+                measurementData: {
+                  weight: measurement.weight?.toString() || '',
+                  bodyFat: measurement.bodyFat?.toString() || '',
+                  muscle: measurement.muscle?.toString() || '',
+                  systolicBP: measurement.systolicBP?.toString() || '',
+                  diastolicBP: measurement.diastolicBP?.toString() || '',
+                  date: measurement.date
+                }
+              })}
+            >
+              <View style={styles.historyContent}>
+                <Text style={styles.historyDate}>{measurement.date}</Text>
+                <View style={styles.historyStats}>
+                  <Text style={styles.historyWeight}>
+                    {measurement.weight} kg
                   </Text>
-                )}
-                {measurement.systolicBP && measurement.diastolicBP && (
-                  <Text style={styles.historySubStat}>
-                    {t("measurement.bloodPressure")} {measurement.systolicBP}/
-                    {measurement.diastolicBP}
-                  </Text>
-                )}
+                  {measurement.bodyFat && (
+                    <Text style={styles.historySubStat}>
+                      {t("measurement.bodyFat")} {measurement.bodyFat}%
+                    </Text>
+                  )}
+                  {measurement.systolicBP && measurement.diastolicBP && (
+                    <Text style={styles.historySubStat}>
+                      {t("measurement.bloodPressure")} {measurement.systolicBP}/
+                      {measurement.diastolicBP}
+                    </Text>
+                  )}
+                </View>
               </View>
-            </View>
+              <Ionicons 
+                name="chevron-forward" 
+                size={20} 
+                color={colors.gray[400]} 
+              />
+            </TouchableOpacity>
           ))}
         </View>
 
@@ -1082,6 +1104,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     padding: spacing.xl,
+  },
+  historyContent: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   historyDate: {
     ...typography.body,

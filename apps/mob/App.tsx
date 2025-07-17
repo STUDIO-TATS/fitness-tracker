@@ -9,6 +9,7 @@ import LoadingScreen from './src/screens/LoadingScreen';
 import { useAuth } from './src/hooks/useAuth';
 import { useFonts } from './src/hooks/useFonts';
 import { useGuestBackup } from './src/hooks/useGuestBackup';
+import { NotificationProvider } from './src/contexts/NotificationContext';
 import { colors } from './src/constants/colors';
 
 export default function App() {
@@ -27,8 +28,10 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      {showMainApp ? <RootNavigator /> : <AuthScreen />}
-      <StatusBar style="light" />
+      <NotificationProvider>
+        {showMainApp ? <RootNavigator /> : <AuthScreen />}
+        <StatusBar style="light" />
+      </NotificationProvider>
     </NavigationContainer>
   );
 }

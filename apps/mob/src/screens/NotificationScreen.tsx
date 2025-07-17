@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -14,8 +14,7 @@ import { colors } from "../constants/colors";
 import { icons } from "../constants/icons";
 import { theme } from "../constants/theme";
 import { useI18n } from "../hooks/useI18n";
-import { supabase } from "../lib/supabase";
-import { useAuth } from "../hooks/useAuth";
+import { useNotifications } from "../contexts/NotificationContext";
 import {
   commonStyles,
   spacing,
@@ -25,96 +24,17 @@ import {
   shadows,
 } from "../constants/styles";
 
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: "app" | "facility" | "achievement" | "reminder";
-  category: string;
-  isRead: boolean;
-  createdAt: string;
-  facilityName?: string;
-  metadata?: any;
-}
-
 export default function NotificationScreen() {
   const { t } = useI18n();
-  const { session } = useAuth();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    refreshing,
+    markAsRead,
+    onRefresh,
+  } = useNotifications();
 
-  useEffect(() => {
-    if (session?.user?.id) {
-      fetchNotifications();
-    } else {
-      setNotifications([]);
-      setLoading(false);
-    }
-  }, [session]);
-
-  const fetchNotifications = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', session?.user?.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      const formattedNotifications = (data || []).map(notification => ({
-        id: notification.id,
-        title: notification.title,
-        message: notification.message,
-        type: notification.type,
-        category: notification.category,
-        isRead: notification.is_read,
-        createdAt: notification.created_at,
-        facilityName: notification.facility_name,
-        metadata: notification.metadata,
-      }));
-
-      setNotifications(formattedNotifications);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-      setNotifications([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchNotifications();
-    setRefreshing(false);
-  };
-
-  const markAsRead = async (id: string) => {
-    try {
-      // ローカル状態を即座に更新
-      setNotifications((prev) =>
-        prev.map((notification) =>
-          notification.id === id
-            ? { ...notification, isRead: true }
-            : notification
-        )
-      );
-
-      // データベースを更新
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', id);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-      // エラー時は状態を元に戻す
-      await fetchNotifications();
-    }
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -167,7 +87,7 @@ export default function NotificationScreen() {
     }
   };
 
-  const renderNotificationItem = ({ item }: { item: Notification }) => (
+  const renderNotificationItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={[
         styles.notificationItem,
@@ -210,8 +130,6 @@ export default function NotificationScreen() {
       </View>
     </TouchableOpacity>
   );
-
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   if (loading) {
     return (

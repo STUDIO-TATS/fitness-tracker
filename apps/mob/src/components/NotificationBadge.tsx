@@ -5,16 +5,16 @@ import { colors } from "../constants/colors";
 import { icons } from "../constants/icons";
 import { theme } from "../constants/theme";
 import { typography, spacing, borderRadius } from "../constants/styles";
+import { useNotifications } from "../contexts/NotificationContext";
 
 interface NotificationBadgeProps {
-  count: number;
   onPress: () => void;
 }
 
 export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
-  count,
   onPress,
 }) => {
+  const { unreadCount } = useNotifications();
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <Ionicons
@@ -22,10 +22,10 @@ export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
         size={24}
         color={theme.colors.text.inverse}
       />
-      {count > 0 && (
+      {unreadCount > 0 && (
         <View style={styles.badge}>
           <Text style={styles.badgeText}>
-            {count > 99 ? "99+" : count.toString()}
+            {unreadCount > 99 ? "99+" : unreadCount.toString()}
           </Text>
         </View>
       )}

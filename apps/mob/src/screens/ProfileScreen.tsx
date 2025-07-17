@@ -377,8 +377,9 @@ export default function ProfileScreen() {
       <ScreenWrapper 
         backgroundColor={colors.purple[50]} 
         scrollable 
-        keyboardAvoiding={false} 
-        dismissKeyboardOnTap={false} 
+        keyboardAvoiding={true} 
+        dismissKeyboardOnTap={true} 
+        useSafeArea={true}
         style={styles.scrollContent}
         refreshControl={
           <TextRefreshControl
@@ -467,6 +468,9 @@ export default function ProfileScreen() {
           <Ionicons name="log-out-outline" size={20} color={colors.white} />
           <Text style={styles.logoutText}>{isGuest ? 'ゲストモード終了' : 'ログアウト'}</Text>
         </TouchableOpacity>
+
+        {/* 編集ボタン用のスペース */}
+        <View style={styles.bottomSpacer} />
       </ScreenWrapper>
 
       {/* アカウント作成モーダル */}
@@ -527,6 +531,7 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
+      {/* 固定ボタンエリア */}
       <View style={styles.bottomActions}>
         {!isEditing ? (
           <TouchableOpacity
@@ -641,6 +646,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flex: 1,
+  },
+  bottomSpacer: {
+    height: 100, // ボタンエリア分のスペース
   },
   bottomActions: {
     position: 'absolute',
@@ -802,7 +810,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: layout.screenPadding,
-    marginBottom: 100, // Space for fixed bottom buttons
+    marginBottom: spacing.xl,
     paddingVertical: spacing.lg,
     borderRadius: borderRadius.md,
     gap: spacing.sm,

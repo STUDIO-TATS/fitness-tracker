@@ -58,6 +58,9 @@ export default {
     settings: 'Settings',
     help: 'Help',
     qrScanner: 'QR Scanner',
+    notifications: 'Notifications',
+    terms: 'Terms of Service',
+    privacy: 'Privacy Policy',
   },
 
   // Home Screen

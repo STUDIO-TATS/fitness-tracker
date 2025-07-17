@@ -1,69 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { TouchableOpacity } from "react-native";
-import { createDrawerNavigator, DrawerNavigationProp } from "@react-navigation/drawer";
+import { createDrawerNavigator } from "@react-navigation/drawer";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import TabNavigator from "./TabNavigator";
+import CalendarScreen from "../screens/CalendarScreen";
+import QRScannerScreen from "../screens/QRScannerScreen";
+import FacilitiesScreen from "../screens/FacilitiesScreen";
+import PointsScreen from "../screens/PointsScreen";
+import ActivityLogsScreen from "../screens/ActivityLogsScreen";
+import ProfileScreen from "../screens/ProfileScreen";
+import SettingsScreen from "../screens/SettingsScreen";
+import MembershipScreen from "../screens/MembershipScreen";
+import AITrainerScreen from "../screens/AITrainerScreen";
+import HelpScreen from "../screens/HelpScreen";
+import TermsScreen from "../screens/TermsScreen";
+import PrivacyScreen from "../screens/PrivacyScreen";
 import { NotificationBadge } from "../components/NotificationBadge";
 import { icons } from "../constants/icons";
 import { theme } from "../constants/theme";
 import { useI18n } from "../hooks/useI18n";
+import { useNotifications } from "../contexts/NotificationContext";
 import { RootDrawerParamList } from "../types/navigation";
-import { supabase } from "../lib/supabase";
-import { useAuth } from "../hooks/useAuth";
-import NotificationScreen from "../screens/NotificationScreen";
 
 const Drawer = createDrawerNavigator<RootDrawerParamList>();
 
 export default function DrawerNavigator() {
   const { t } = useI18n();
   const navigation = useNavigation<any>();
-  const { session } = useAuth();
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    if (session?.user?.id) {
-      fetchUnreadCount();
-      
-      // リアルタイムサブスクリプションを設定
-      const subscription = supabase
-        .channel('notifications')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${session.user.id}`,
-          },
-          () => {
-            fetchUnreadCount();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        subscription.unsubscribe();
-      };
-    }
-  }, [session]);
-
-  const fetchUnreadCount = async () => {
-    if (!session?.user?.id) return;
-    
-    try {
-      const { count, error } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', session.user.id)
-        .eq('is_read', false);
-
-      if (error) throw error;
-      setUnreadCount(count || 0);
-    } catch (error) {
-      console.error('Error fetching unread count:', error);
-    }
-  };
 
   return (
     <Drawer.Navigator
@@ -83,291 +47,413 @@ export default function DrawerNavigator() {
           fontWeight: theme.fontWeight.bold,
           fontSize: theme.fontSize.xl,
         },
-        // スライドアニメーションの設定
-        drawerType: 'slide',
-        overlayColor: 'rgba(0, 0, 0, 0.5)',
-        swipeEnabled: true,
       }}
     >
       <Drawer.Screen
         name="Main"
         component={TabNavigator}
-        options={({ navigation, route }) => {
-          // 現在のタブに基づいてタイトルを決定
-          const getTitle = () => {
-            const state = navigation.getState();
-            const tabState = state.routes[state.index]?.state;
-            
-            if (tabState) {
-              const activeTab = tabState.routes[tabState.index || 0];
-              switch (activeTab.name) {
-                case 'Home':
-                  return "Fitness Tracker";
-                case 'Goals':
-                  return t("navigation.goals");
-                case 'Measurement':
-                  return t("navigation.measurement");
-                case 'Workout':
-                  return t("navigation.workout");
-                default:
-                  return "Fitness Tracker";
-              }
-            }
-            return "Fitness Tracker";
-          };
-
-          return {
-            title: getTitle(),
-            drawerLabel: t("navigation.home"),
-            drawerIcon: ({ color, size }) => (
-              <Ionicons name={icons.navigation.home} size={size} color={color} />
-            ),
-            headerLeft: () => (
-              <TouchableOpacity
-                onPress={() => navigation.openDrawer()}
-                style={{
-                  marginLeft: 16,
-                  padding: 8,
-                }}
-              >
-                <Ionicons
-                  name="menu"
-                  size={24}
-                  color={theme.colors.text.inverse}
-                />
-              </TouchableOpacity>
-            ),
-            headerRight: () => (
-              <NotificationBadge
-                count={unreadCount}
-                onPress={() => navigation.navigate('Notifications')}
-              />
-            ),
-          };
-        }}
-      />
-      <Drawer.Screen
-        name="Profile"
-        component={TabNavigator}
-        options={{
-          drawerLabel: t("navigation.profile"),
+        options={({ navigation: drawerNav }) => ({
+          drawerLabel: t("navigation.home"),
           drawerIcon: ({ color, size }) => (
-            <Ionicons
-              name={icons.membership.person}
-              size={size}
-              color={color}
+            <Ionicons name={icons.navigation.homeOutline} size={size} color={color} />
+          ),
+          headerTitle: t("navigation.home"),
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => drawerNav.openDrawer()}
+              style={{
+                marginLeft: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons
+                name="menu"
+                size={24}
+                color={theme.colors.text.inverse}
+              />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <NotificationBadge
+              onPress={() => {
+                // 直接RootNavigatorにナビゲート
+                navigation.navigate('Notifications');
+              }}
             />
           ),
-          drawerItemStyle: { display: "flex" },
-        }}
-        listeners={({ navigation: drawerNav }) => ({
-          drawerItemPress: (e) => {
-            e.preventDefault();
-            drawerNav.closeDrawer();
-            navigation.navigate('Profile');
-          },
+        })}
+      />
+      <Drawer.Screen
+        name="Calendar"
+        component={CalendarScreen}
+        options={({ navigation: drawerNav }) => ({
+          drawerLabel: t("navigation.calendar"),
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="calendar-outline" size={size} color={color} />
+          ),
+          headerTitle: t("navigation.calendar"),
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => drawerNav.openDrawer()}
+              style={{
+                marginLeft: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons
+                name="menu"
+                size={24}
+                color={theme.colors.text.inverse}
+              />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <NotificationBadge
+              onPress={() => navigation.navigate('Notifications')}
+            />
+          ),
         })}
       />
       <Drawer.Screen
         name="QRScanner"
-        component={TabNavigator}
-        options={{
+        component={QRScannerScreen}
+        options={({ navigation: drawerNav }) => ({
           drawerLabel: t("navigation.qrScanner"),
           drawerIcon: ({ color, size }) => (
-            <Ionicons name={icons.scanning.qrCode} size={size} color={color} />
+            <Ionicons name="qr-code-outline" size={size} color={color} />
           ),
-          drawerItemStyle: { display: "flex" },
-        }}
-        listeners={({ navigation: drawerNav }) => ({
-          drawerItemPress: (e) => {
-            e.preventDefault();
-            drawerNav.closeDrawer();
-            navigation.navigate('QRScanner');
-          },
-        })}
-      />
-      <Drawer.Screen
-        name="Points"
-        component={TabNavigator}
-        options={{
-          drawerLabel: t("navigation.points"),
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name={icons.rewards.gift} size={size} color={color} />
+          headerTitle: t("navigation.qrScanner"),
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => drawerNav.openDrawer()}
+              style={{
+                marginLeft: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons
+                name="menu"
+                size={24}
+                color={theme.colors.text.inverse}
+              />
+            </TouchableOpacity>
           ),
-          drawerItemStyle: { display: "flex" },
-        }}
-        listeners={({ navigation: drawerNav }) => ({
-          drawerItemPress: (e) => {
-            e.preventDefault();
-            drawerNav.closeDrawer();
-            navigation.navigate('Points');
-          },
-        })}
-      />
-      <Drawer.Screen
-        name="ActivityLogs"
-        component={TabNavigator}
-        options={{
-          drawerLabel: t("navigation.activityLogs"),
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name={icons.misc.list} size={size} color={color} />
-          ),
-          drawerItemStyle: { display: "flex" },
-        }}
-        listeners={({ navigation: drawerNav }) => ({
-          drawerItemPress: (e) => {
-            e.preventDefault();
-            drawerNav.closeDrawer();
-            navigation.navigate('ActivityLogs');
-          },
-        })}
-      />
-      <Drawer.Screen
-        name="Notifications"
-        component={NotificationScreen}
-        options={{
-          drawerLabel: t("navigation.notifications"),
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="notifications-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen
-        name="Calendar"
-        component={TabNavigator}
-        options={{
-          drawerLabel: t("navigation.calendar"),
-          drawerIcon: ({ color, size }) => (
-            <Ionicons
-              name={icons.activity.calendar}
-              size={size}
-              color={color}
+          headerRight: () => (
+            <NotificationBadge
+              onPress={() => navigation.navigate('Notifications')}
             />
           ),
-          drawerItemStyle: { display: "flex" },
-        }}
-        listeners={({ navigation: drawerNav }) => ({
-          drawerItemPress: (e) => {
-            e.preventDefault();
-            drawerNav.closeDrawer();
-            navigation.navigate('Calendar');
-          },
         })}
       />
       <Drawer.Screen
         name="Facilities"
-        component={TabNavigator}
-        options={{
+        component={FacilitiesScreen}
+        options={({ navigation: drawerNav }) => ({
           drawerLabel: t("navigation.facilities"),
           drawerIcon: ({ color, size }) => (
-            <Ionicons
-              name={icons.facility.business}
-              size={size}
-              color={color}
+            <Ionicons name="business-outline" size={size} color={color} />
+          ),
+          headerTitle: t("navigation.facilities"),
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => drawerNav.openDrawer()}
+              style={{
+                marginLeft: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons
+                name="menu"
+                size={24}
+                color={theme.colors.text.inverse}
+              />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <NotificationBadge
+              onPress={() => navigation.navigate('Notifications')}
             />
           ),
-          drawerItemStyle: { display: "flex" },
-        }}
-        listeners={({ navigation: drawerNav }) => ({
-          drawerItemPress: (e) => {
-            e.preventDefault();
-            drawerNav.closeDrawer();
-            navigation.navigate('Facilities');
-          },
         })}
       />
       <Drawer.Screen
-        name="FacilityDetail"
-        component={TabNavigator}
-        options={{
-          drawerItemStyle: { display: "none" },
-        }}
-      />
-      <Drawer.Screen
-        name="Membership"
-        component={TabNavigator}
-        options={{
-          drawerLabel: t("navigation.membership"),
+        name="Points"
+        component={PointsScreen}
+        options={({ navigation: drawerNav }) => ({
+          drawerLabel: t("navigation.points"),
           drawerIcon: ({ color, size }) => (
-            <Ionicons name={icons.membership.card} size={size} color={color} />
+            <Ionicons name="star-outline" size={size} color={color} />
           ),
-          drawerItemStyle: { display: "flex" },
-        }}
-        listeners={({ navigation: drawerNav }) => ({
-          drawerItemPress: (e) => {
-            e.preventDefault();
-            drawerNav.closeDrawer();
-            navigation.navigate('Membership');
-          },
+          headerTitle: t("navigation.points"),
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => drawerNav.openDrawer()}
+              style={{
+                marginLeft: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons
+                name="menu"
+                size={24}
+                color={theme.colors.text.inverse}
+              />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <NotificationBadge
+              onPress={() => navigation.navigate('Notifications')}
+            />
+          ),
         })}
       />
       <Drawer.Screen
-        name="AITrainer"
-        component={TabNavigator}
-        options={{
-          drawerLabel: t("navigation.aiTrainer"),
+        name="ActivityLogs"
+        component={ActivityLogsScreen}
+        options={({ navigation: drawerNav }) => ({
+          drawerLabel: t("navigation.activityLogs"),
           drawerIcon: ({ color, size }) => (
-            <Ionicons name={icons.ai.robot} size={size} color={color} />
+            <Ionicons name="list-outline" size={size} color={color} />
           ),
-          drawerItemStyle: { display: "flex" },
-        }}
-        listeners={({ navigation: drawerNav }) => ({
-          drawerItemPress: (e) => {
-            e.preventDefault();
-            drawerNav.closeDrawer();
-            navigation.navigate('AITrainer');
-          },
+          headerTitle: t("navigation.activityLogs"),
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => drawerNav.openDrawer()}
+              style={{
+                marginLeft: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons
+                name="menu"
+                size={24}
+                color={theme.colors.text.inverse}
+              />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <NotificationBadge
+              onPress={() => navigation.navigate('Notifications')}
+            />
+          ),
+        })}
+      />
+      <Drawer.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={({ navigation: drawerNav }) => ({
+          drawerLabel: t("navigation.profile"),
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" size={size} color={color} />
+          ),
+          headerTitle: t("navigation.profile"),
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => drawerNav.openDrawer()}
+              style={{
+                marginLeft: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons
+                name="menu"
+                size={24}
+                color={theme.colors.text.inverse}
+              />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <NotificationBadge
+              onPress={() => navigation.navigate('Notifications')}
+            />
+          ),
         })}
       />
       <Drawer.Screen
         name="Settings"
-        component={TabNavigator}
-        options={{
+        component={SettingsScreen}
+        options={({ navigation: drawerNav }) => ({
           drawerLabel: t("navigation.settings"),
           drawerIcon: ({ color, size }) => (
-            <Ionicons name={icons.system.settings} size={size} color={color} />
+            <Ionicons name="settings-outline" size={size} color={color} />
           ),
-          drawerItemStyle: { display: "flex" },
-        }}
-        listeners={({ navigation: drawerNav }) => ({
-          drawerItemPress: (e) => {
-            e.preventDefault();
-            drawerNav.closeDrawer();
-            navigation.navigate('Settings');
-          },
+          headerTitle: t("navigation.settings"),
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => drawerNav.openDrawer()}
+              style={{
+                marginLeft: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons
+                name="menu"
+                size={24}
+                color={theme.colors.text.inverse}
+              />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <NotificationBadge
+              onPress={() => navigation.navigate('Notifications')}
+            />
+          ),
+        })}
+      />
+      <Drawer.Screen
+        name="Membership"
+        component={MembershipScreen}
+        options={({ navigation: drawerNav }) => ({
+          drawerLabel: t("navigation.membership"),
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="card-outline" size={size} color={color} />
+          ),
+          headerTitle: t("navigation.membership"),
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => drawerNav.openDrawer()}
+              style={{
+                marginLeft: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons
+                name="menu"
+                size={24}
+                color={theme.colors.text.inverse}
+              />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <NotificationBadge
+              onPress={() => navigation.navigate('Notifications')}
+            />
+          ),
+        })}
+      />
+      <Drawer.Screen
+        name="AITrainer"
+        component={AITrainerScreen}
+        options={({ navigation: drawerNav }) => ({
+          drawerLabel: t("navigation.aiTrainer"),
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="fitness-outline" size={size} color={color} />
+          ),
+          headerTitle: t("navigation.aiTrainer"),
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => drawerNav.openDrawer()}
+              style={{
+                marginLeft: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons
+                name="menu"
+                size={24}
+                color={theme.colors.text.inverse}
+              />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <NotificationBadge
+              onPress={() => navigation.navigate('Notifications')}
+            />
+          ),
         })}
       />
       <Drawer.Screen
         name="Help"
-        component={TabNavigator}
-        options={{
+        component={HelpScreen}
+        options={({ navigation: drawerNav }) => ({
           drawerLabel: t("navigation.help"),
           drawerIcon: ({ color, size }) => (
-            <Ionicons name={icons.system.help} size={size} color={color} />
+            <Ionicons name="help-circle-outline" size={size} color={color} />
           ),
-          drawerItemStyle: { display: "flex" },
-        }}
-        listeners={({ navigation: drawerNav }) => ({
-          drawerItemPress: (e) => {
-            e.preventDefault();
-            drawerNav.closeDrawer();
-            navigation.navigate('Help');
-          },
+          headerTitle: t("navigation.help"),
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => drawerNav.openDrawer()}
+              style={{
+                marginLeft: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons
+                name="menu"
+                size={24}
+                color={theme.colors.text.inverse}
+              />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <NotificationBadge
+              onPress={() => navigation.navigate('Notifications')}
+            />
+          ),
         })}
       />
       <Drawer.Screen
         name="Terms"
-        component={TabNavigator}
-        options={{
-          drawerItemStyle: { display: "none" },
-        }}
+        component={TermsScreen}
+        options={({ navigation: drawerNav }) => ({
+          drawerLabel: t("navigation.terms"),
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="document-text-outline" size={size} color={color} />
+          ),
+          headerTitle: t("navigation.terms"),
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => drawerNav.openDrawer()}
+              style={{
+                marginLeft: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons
+                name="menu"
+                size={24}
+                color={theme.colors.text.inverse}
+              />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <NotificationBadge
+              onPress={() => navigation.navigate('Notifications')}
+            />
+          ),
+        })}
       />
       <Drawer.Screen
         name="Privacy"
-        component={TabNavigator}
-        options={{
-          drawerItemStyle: { display: "none" },
-        }}
+        component={PrivacyScreen}
+        options={({ navigation: drawerNav }) => ({
+          drawerLabel: t("navigation.privacy"),
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="shield-checkmark-outline" size={size} color={color} />
+          ),
+          headerTitle: t("navigation.privacy"),
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => drawerNav.openDrawer()}
+              style={{
+                marginLeft: 16,
+                padding: 8,
+              }}
+            >
+              <Ionicons
+                name="menu"
+                size={24}
+                color={theme.colors.text.inverse}
+              />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <NotificationBadge
+              onPress={() => navigation.navigate('Notifications')}
+            />
+          ),
+        })}
       />
     </Drawer.Navigator>
   );

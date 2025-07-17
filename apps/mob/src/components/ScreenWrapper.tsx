@@ -9,6 +9,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  SafeAreaView,
 } from 'react-native';
 import { colors } from '../constants/colors';
 import { layout } from '../constants/styles';
@@ -24,6 +25,7 @@ interface ScreenWrapperProps {
   keyboardAvoiding?: boolean;
   dismissKeyboardOnTap?: boolean;
   refreshControl?: React.ReactElement;
+  useSafeArea?: boolean;
 }
 
 export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
@@ -37,6 +39,7 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
   keyboardAvoiding = true,
   dismissKeyboardOnTap = true,
   refreshControl,
+  useSafeArea = false,
 }) => {
   const contentPadding = noPadding ? 0 : layout.screenPadding;
   
@@ -49,6 +52,7 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
         paddingBottom: contentPadding + 100,
       }}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
       scrollEnabled={true}
       bounces={true}
       alwaysBounceVertical={true}
@@ -80,20 +84,46 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
     )
   );
 
-  const wrappedContent = content;
+  // SafeAreaとKeyboardAvoidingを組み合わせる場合の正しい構造
+  if (useSafeArea && keyboardAvoiding) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor }]}>
+        <KeyboardAvoidingView
+          style={[styles.container, style]}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 20}
+        >
+          {content}
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
 
+  // SafeAreaのみの場合
+  if (useSafeArea) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor }]}>
+        <View style={[styles.container, style]}>
+          {content}
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // KeyboardAvoidingのみの場合
   if (keyboardAvoiding) {
     return (
       <KeyboardAvoidingView
         style={[styles.container, { backgroundColor }, style]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 20}
       >
-        {wrappedContent}
+        {content}
       </KeyboardAvoidingView>
     );
   }
 
+  // どちらも使わない場合
   return (
     <View
       style={[
@@ -102,7 +132,7 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
         style,
       ]}
     >
-      {wrappedContent}
+      {content}
     </View>
   );
 };

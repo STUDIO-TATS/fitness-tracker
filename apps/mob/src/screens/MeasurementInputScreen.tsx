@@ -7,13 +7,12 @@ import {
   TextInput,
   SafeAreaView,
   Keyboard,
-  ScrollView,
-  KeyboardAvoidingView,
   Platform,
   Alert,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { colors } from "../constants/colors";
 import { theme } from "../constants/theme";
 import { useI18n } from "../hooks/useI18n";
@@ -27,22 +26,44 @@ import {
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 
+interface RouteParams {
+  editMode?: boolean;
+  measurementId?: string;
+  measurementData?: {
+    weight: string;
+    bodyFat: string;
+    muscle: string;
+    systolicBP: string;
+    diastolicBP: string;
+    date: string;
+  };
+}
+
 export default function MeasurementInputScreen() {
   const { t } = useI18n();
   const navigation = useNavigation();
+  const route = useRoute();
   const { session } = useAuth();
   const user = session?.user;
+
+  const params = route.params as RouteParams;
+  const isEditMode = params?.editMode || false;
+  const measurementId = params?.measurementId;
+  const existingData = params?.measurementData;
+
   const weightInputRef = useRef<TextInput>(null);
   const bodyFatInputRef = useRef<TextInput>(null);
   const muscleInputRef = useRef<TextInput>(null);
   const systolicBPInputRef = useRef<TextInput>(null);
   const diastolicBPInputRef = useRef<TextInput>(null);
-  
-  const [weight, setWeight] = useState("");
-  const [bodyFat, setBodyFat] = useState("");
-  const [muscle, setMuscle] = useState("");
-  const [systolicBP, setSystolicBP] = useState("");
-  const [diastolicBP, setDiastolicBP] = useState("");
+
+  const [weight, setWeight] = useState(existingData?.weight || "");
+  const [bodyFat, setBodyFat] = useState(existingData?.bodyFat || "");
+  const [muscle, setMuscle] = useState(existingData?.muscle || "");
+  const [systolicBP, setSystolicBP] = useState(existingData?.systolicBP || "");
+  const [diastolicBP, setDiastolicBP] = useState(
+    existingData?.diastolicBP || ""
+  );
   const [saving, setSaving] = useState(false);
 
   // 画面が開かれたときに最初のフィールドにフォーカス
@@ -70,13 +91,17 @@ export default function MeasurementInputScreen() {
     try {
       const measurementData: any = {
         user_id: user.id,
-        measurement_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+        measurement_date: isEditMode && existingData?.date 
+          ? existingData.date 
+          : new Date().toISOString().split("T")[0], // YYYY-MM-DD
         weight: weight.trim() ? parseFloat(weight) : null,
         body_fat_percentage: bodyFat.trim() ? parseFloat(bodyFat) : null,
         muscle_mass: muscle.trim() ? parseFloat(muscle) : null,
-        notes: `測定記録 - ${new Date().toLocaleDateString('ja-JP')}`,
+        notes: isEditMode 
+          ? `測定記録更新 - ${new Date().toLocaleDateString("ja-JP")}`
+          : `測定記録 - ${new Date().toLocaleDateString("ja-JP")}`,
       };
-      
+
       // Add blood pressure data if provided
       if (systolicBP.trim() || diastolicBP.trim()) {
         measurementData.measurements = {
@@ -85,19 +110,40 @@ export default function MeasurementInputScreen() {
         };
       }
 
-      const { error } = await supabase
-        .from("measurements")
-        .insert([measurementData]);
+      let error;
+      if (isEditMode && measurementId) {
+        // 更新の場合
+        console.log('Updating measurement with ID:', measurementId);
+        const { error: updateError } = await supabase
+          .from("measurements")
+          .update(measurementData)
+          .eq('id', measurementId);
+        error = updateError;
+      } else {
+        // 新規作成の場合
+        console.log('Creating new measurement');
+        const { error: insertError } = await supabase
+          .from("measurements")
+          .insert([measurementData]);
+        error = insertError;
+      }
 
       if (error) {
         console.error("Measurement save error:", error);
-        Alert.alert("エラー", "測定記録の保存に失敗しました");
+        Alert.alert("エラー", 
+          isEditMode ? "測定記録の更新に失敗しました" : "測定記録の保存に失敗しました"
+        );
       } else {
-        navigation.goBack();
+        Alert.alert("成功", 
+          isEditMode ? "測定記録を更新しました" : "測定記録を保存しました",
+          [{ text: "OK", onPress: () => navigation.goBack() }]
+        );
       }
     } catch (error) {
       console.error("Measurement save error:", error);
-      Alert.alert("エラー", "測定記録の保存に失敗しました");
+      Alert.alert("エラー", 
+        isEditMode ? "測定記録の更新に失敗しました" : "測定記録の保存に失敗しました"
+      );
     } finally {
       setSaving(false);
     }
@@ -109,28 +155,72 @@ export default function MeasurementInputScreen() {
     navigation.goBack();
   };
 
+  const handleDelete = async () => {
+    if (!isEditMode || !measurementId) return;
+
+    Alert.alert(
+      "測定記録を削除",
+      "この測定記録を削除しますか？この操作は元に戻せません。",
+      [
+        { text: "キャンセル", style: "cancel" },
+        {
+          text: "削除",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from("measurements")
+                .delete()
+                .eq("id", measurementId);
+
+              if (error) {
+                Alert.alert("エラー", "測定記録の削除に失敗しました");
+              } else {
+                Alert.alert("成功", "測定記録を削除しました", [
+                  { text: "OK", onPress: () => navigation.goBack() },
+                ]);
+              }
+            } catch (error) {
+              Alert.alert("エラー", "測定記録の削除に失敗しました");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={0}
-      >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={colors.gray[600]} />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={colors.gray[600]} />
+        </TouchableOpacity>
+        <Text style={styles.title}>
+          {isEditMode ? "測定記録を編集" : t("measurement.record")}
+        </Text>
+        {isEditMode ? (
+          <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
+            <Ionicons name="trash-outline" size={24} color={colors.red[600]} />
           </TouchableOpacity>
-          <Text style={styles.title}>{t("measurement.record")}</Text>
+        ) : (
           <View style={styles.placeholder} />
-        </View>
+        )}
+      </View>
 
-        <ScrollView
-          style={styles.scrollContainer}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="always"
-          keyboardDismissMode="none"
-        >
+      <KeyboardAwareScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraScrollHeight={0}
+        extraHeight={0}
+        keyboardOpeningTime={0}
+        resetScrollToCoords={{ x: 0, y: 0 }}
+        scrollEnabled={true}
+        viewIsInsideTabBar={false}
+      >
         <View style={styles.formContainer}>
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>
@@ -213,29 +303,36 @@ export default function MeasurementInputScreen() {
             </View>
           </View>
         </View>
-        </ScrollView>
 
         <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.button, styles.cancelButton]}
-          onPress={handleCancel}
-        >
-          <Text style={styles.cancelButtonText}>
-            {t("common.cancel")}
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, styles.cancelButton]}
+            onPress={handleCancel}
+          >
+            <Text style={styles.cancelButtonText}>{t("common.cancel")}</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.saveButton, saving && styles.disabledButton]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          <Text style={styles.saveButtonText}>
-            {saving ? "保存中..." : t("common.save")}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      </KeyboardAvoidingView>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.saveButton,
+              saving && styles.disabledButton,
+            ]}
+            onPress={handleSave}
+            disabled={saving}
+          >
+            <Text style={styles.saveButtonText}>
+              {saving
+                ? isEditMode
+                  ? "更新中..."
+                  : "保存中..."
+                : isEditMode
+                ? "更新"
+                : t("common.save")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -265,17 +362,22 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 40,
   },
+  deleteButton: {
+    padding: spacing.sm,
+    width: 40,
+    alignItems: "center",
+  },
   scrollContainer: {
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 0,
-    paddingBottom: spacing.xl,
+    paddingBottom: 0,
   },
   formContainer: {
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.lg,
     paddingBottom: spacing.xl,
+    minHeight: 500, // 最低高さを設定してスクロールを保証
   },
   inputGroup: {
     marginBottom: spacing.lg,
@@ -316,6 +418,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderTopWidth: 1,
     borderTopColor: colors.gray[200],
+    marginTop: spacing.lg,
   },
   button: {
     flex: 1,

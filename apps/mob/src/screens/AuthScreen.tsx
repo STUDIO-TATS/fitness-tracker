@@ -9,7 +9,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Modal,
+  SafeAreaView,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { colors } from '../constants/colors';
 import { useI18n } from '../hooks/useI18n';
@@ -32,6 +36,10 @@ export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [hasBackup, setHasBackup] = useState(false);
   const [showRestoreOption, setShowRestoreOption] = useState(false);
+  const [showGuestSetup, setShowGuestSetup] = useState(false);
+  const [guestName, setGuestName] = useState('ゲストユーザー');
+  const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const isDev = __DEV__; // React Native's development flag
 
   useEffect(() => {
@@ -41,6 +49,35 @@ export default function AuthScreen() {
   const checkForBackup = async () => {
     const backup = await guestDataService.hasBackup();
     setHasBackup(backup);
+  };
+
+  const calculateAge = (birthDate: Date) => {
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (selectedDate) {
+      setDateOfBirth(selectedDate);
+    }
   };
 
   const handleAuth = async () => {
@@ -82,70 +119,30 @@ export default function AuthScreen() {
   };
 
   const handleContinueAsGuest = async (restoreData = false) => {
-    setIsLoading(true);
-    try {
-      // Supabaseの匿名認証を使用
-      const { data, error } = await supabase.auth.signInAnonymously();
-      
-      if (error) throw error;
-      
-      if (data.user) {
-        if (restoreData && hasBackup) {
-          // バックアップデータを復元
-          try {
-            const backup = await guestDataService.getGuestBackup();
-            if (backup) {
-              await guestDataService.restoreGuestData(data.user.id, backup);
-              Alert.alert('成功', '以前のゲストデータを復元しました！');
-            }
-          } catch (restoreError: any) {
-            console.error('Restore error details:', restoreError);
-            Alert.alert(
-              '復元エラー', 
-              `データの復元に失敗しました。\n\nエラー: ${restoreError.message || restoreError.code || '不明なエラー'}\n\n新しいゲストとして開始します。`
-            );
-            // 復元失敗時は新しいプロフィールを作成
-            const { error: profileError } = await supabase
-              .from('user_profiles')
-              .upsert({
-                user_id: data.user.id,
-                display_name: 'ゲスト',
-                preferences: {
-                  isAnonymous: true,
-                  createdAt: new Date().toISOString(),
-                },
-              }, {
-                onConflict: 'user_id',
-              });
-            if (profileError) {
-              console.error('Error creating fallback profile:', profileError);
-            }
-          }
-        } else {
-          // 新しいゲストユーザーのプロフィールを作成
-          const { error: profileError } = await supabase
-            .from('user_profiles')
-            .upsert({
-              user_id: data.user.id,
-              display_name: 'ゲスト',
-              preferences: {
-                isAnonymous: true,
-                createdAt: new Date().toISOString(),
-              },
-            }, {
-              onConflict: 'user_id',
-            });
-            
-          if (profileError) {
-            console.error('Error creating guest profile:', profileError);
+    if (restoreData && hasBackup) {
+      // データ復元の場合は直接ログイン
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase.auth.signInAnonymously();
+        if (error) throw error;
+        
+        if (data.user) {
+          const backup = await guestDataService.getGuestBackup();
+          if (backup) {
+            await guestDataService.restoreGuestData(data.user.id, backup);
+            Alert.alert('成功', '以前のゲストデータを復元しました！');
           }
         }
+      } catch (error: any) {
+        console.error('Error restoring guest data:', error);
+        Alert.alert('復元エラー', 'データの復元に失敗しました。新しいゲストとして開始します。');
+        setShowGuestSetup(true);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error: any) {
-      console.error('Error continuing as guest:', error);
-      Alert.alert('エラー', error.message || 'ゲストモードの開始に失敗しました');
-    } finally {
-      setIsLoading(false);
+    } else {
+      // 新規ゲストの場合はプロフィール設定画面を表示
+      setShowGuestSetup(true);
     }
   };
 
@@ -160,14 +157,210 @@ export default function AuthScreen() {
     );
   };
 
+  const handleGuestProfileSave = async () => {
+    if (!guestName.trim()) {
+      Alert.alert('エラー', '名前を入力してください。');
+      return;
+    }
+
+    if (!dateOfBirth) {
+      Alert.alert('エラー', '生年月日を選択してください。');
+      return;
+    }
+
+    const formattedDate = formatDate(dateOfBirth);
+    const age = calculateAge(dateOfBirth);
+    
+    // 入力内容の確認
+    Alert.alert(
+      '設定内容の確認',
+      `以下の内容で設定します。よろしいですか？\n\n【お名前】\n${guestName.trim()}\n\n【生年月日】\n${formattedDate} （${age}歳）\n\n※生年月日は後で変更できません`,
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: '設定を完了', onPress: saveGuestProfile, style: 'default' },
+      ]
+    );
+  };
+
+  const saveGuestProfile = async () => {
+    if (!dateOfBirth) return;
+    
+    setIsLoading(true);
+    try {
+      // Supabaseの匿名認証を使用
+      const { data, error } = await supabase.auth.signInAnonymously();
+      if (error) throw error;
+      
+      if (data.user) {
+        const dateString = dateOfBirth.toISOString().split('T')[0]; // YYYY-MM-DD format
+        
+        // プロフィールを作成
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .upsert({
+            user_id: data.user.id,
+            display_name: guestName.trim(),
+            date_of_birth: dateString,
+            preferences: {
+              isAnonymous: true,
+              profileSetupCompleted: true,
+              createdAt: new Date().toISOString(),
+            },
+          }, {
+            onConflict: 'user_id',
+          });
+          
+        if (profileError) {
+          console.error('Error creating guest profile:', profileError);
+          throw profileError;
+        }
+
+        Alert.alert('完了', 'プロフィールを設定しました！');
+        setShowGuestSetup(false);
+      }
+    } catch (error: any) {
+      console.error('Error creating guest profile:', error);
+      Alert.alert('エラー', 'プロフィールの作成に失敗しました。');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ゲストプロフィール設定画面の条件分岐
+  if (showGuestSetup) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView 
+          style={styles.flex1}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+        <ScrollView 
+          contentContainerStyle={styles.guestContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.guestHeader}>
+            <View style={styles.guestTitleContainer}>
+              <Ionicons name="person-add" size={32} color={colors.primary} />
+              <Text style={styles.guestTitle}>プロフィール設定</Text>
+            </View>
+            <Text style={styles.guestSubtitle}>
+              ゲストユーザーとしてアプリを使用するために{'\n'}基本情報を入力してください
+            </Text>
+          </View>
+
+          <View style={styles.guestForm}>
+            <View style={styles.guestInputContainer}>
+              <View style={styles.guestLabelContainer}>
+                <Text style={styles.guestLabel}>お名前</Text>
+                <Text style={styles.guestLabelHint}>（あとで変更できます）</Text>
+              </View>
+              <TextInput
+                style={styles.guestInput}
+                value={guestName}
+                onChangeText={setGuestName}
+                placeholder="お名前を入力してください"
+                placeholderTextColor={colors.gray[400]}
+                maxLength={50}
+              />
+            </View>
+
+            <View style={styles.guestInputContainer}>
+              <View style={styles.guestLabelContainer}>
+                <Text style={styles.guestLabel}>生年月日</Text>
+                <Text style={styles.guestLabelWarning}>（一度設定すると変更できません）</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.datePickerButton}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Text style={[styles.datePickerText, !dateOfBirth && styles.datePickerPlaceholder]}>
+                  {dateOfBirth ? `${formatDate(dateOfBirth)} （${calculateAge(dateOfBirth)}歳）` : '生年月日を選択してください'}
+                </Text>
+                <Ionicons name="calendar-outline" size={20} color={colors.purple[400]} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.saveButton, isLoading && styles.buttonDisabled]}
+              onPress={handleGuestProfileSave}
+              disabled={isLoading}
+            >
+              <Ionicons name="checkmark-circle-outline" size={18} color={colors.white} />
+              <Text style={styles.saveButtonText}>
+                {isLoading ? '保存中...' : '設定を完了'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => setShowGuestSetup(false)}
+            >
+              <Ionicons name="arrow-back-outline" size={16} color={colors.gray[700]} />
+              <Text style={styles.backButtonText}>戻る</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        {/* DatePicker Modal */}
+        {showDatePicker && (
+          <Modal
+            transparent={true}
+            animationType="slide"
+            visible={showDatePicker}
+            onRequestClose={() => setShowDatePicker(false)}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>生年月日を選択</Text>
+                  <TouchableOpacity 
+                    onPress={() => setShowDatePicker(false)}
+                    style={styles.modalCloseButton}
+                  >
+                    <Ionicons name="close-outline" size={24} color={colors.gray[600]} />
+                  </TouchableOpacity>
+                </View>
+                <DateTimePicker
+                  value={dateOfBirth || new Date(2000, 0, 1)}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={handleDateChange}
+                  maximumDate={new Date()}
+                  minimumDate={new Date(1900, 0, 1)}
+                  locale="ja-JP"
+                />
+                {Platform.OS === 'ios' && (
+                  <TouchableOpacity
+                    style={styles.modalButton}
+                    onPress={() => setShowDatePicker(false)}
+                  >
+                    <Text style={styles.modalButtonText}>完了</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </Modal>
+        )}
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView 
+        style={styles.flex1}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.content}>
           <Text style={styles.title}>Fitness Tracker</Text>
@@ -261,7 +454,8 @@ export default function AuthScreen() {
         )}
       </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -269,6 +463,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.pink[50],
+  },
+  flex1: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
@@ -404,5 +601,194 @@ const styles = StyleSheet.create({
     color: colors.gray[600],
     fontSize: 12,
     marginTop: 4,
+  },
+  // Guest profile setup styles
+  guestContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+    paddingTop: 20,
+  },
+  guestHeader: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  guestTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 12,
+    justifyContent: 'center',
+  },
+  guestTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 8,
+  },
+  guestSubtitle: {
+    fontSize: 16,
+    color: colors.gray[600],
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  guestForm: {
+    marginBottom: 24,
+  },
+  guestInputContainer: {
+    marginBottom: 32,
+  },
+  guestLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    flexWrap: 'wrap',
+  },
+  guestLabel: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.gray[800],
+  },
+  guestLabelHint: {
+    fontSize: 14,
+    color: colors.gray[500],
+    marginLeft: 8,
+  },
+  guestLabelWarning: {
+    fontSize: 14,
+    color: colors.red[600],
+    marginLeft: 8,
+    fontWeight: '600',
+  },
+  guestInput: {
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.gray[200],
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: colors.gray[900],
+    shadowColor: colors.gray[400],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  guestInputFocused: {
+    borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.2,
+  },
+  datePickerButton: {
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.gray[200],
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: colors.gray[400],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  datePickerText: {
+    fontSize: 16,
+    color: colors.gray[800],
+    fontWeight: '500',
+  },
+  datePickerPlaceholder: {
+    color: colors.gray[400],
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: colors.white,
+    borderRadius: 20,
+    padding: 20,
+    margin: 20,
+    alignItems: 'center',
+    shadowColor: colors.gray[900],
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.gray[800],
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginTop: 20,
+  },
+  modalButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  buttonContainer: {
+    marginTop: 32,
+    gap: 16,
+  },
+  saveButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  saveButtonText: {
+    color: colors.white,
+    fontSize: 18,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  backButton: {
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.gray[300],
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  backButtonText: {
+    color: colors.gray[700],
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

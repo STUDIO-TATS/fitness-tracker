@@ -59,6 +59,8 @@ export default {
     help: 'ヘルプ',
     qrScanner: 'QRスキャナー',
     notifications: '通知',
+    terms: '利用規約',
+    privacy: 'プライバシーポリシー',
   },
 
   // ホーム画面
