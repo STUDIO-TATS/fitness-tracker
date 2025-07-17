@@ -67,20 +67,24 @@ export const ChartSection: React.FC<ChartSectionProps> = ({
 
   const renderChart = () => {
     const chartData = data?.[currentPeriod];
-    const chartWidth = isModal
-      ? screenWidth - 80
-      : Math.max(screenWidth - 64, 320);
+    // グラフの幅を計算 - データポイント数に応じて幅を調整
+    const dataPointCount = chartData?.labels?.length || 5;
+    const minChartWidth = screenWidth - 64;
+    const calculatedWidth = Math.max(dataPointCount * 80, minChartWidth);
+    const chartWidth = isModal ? calculatedWidth - 20 : calculatedWidth;
     const chartHeight = isModal ? 250 : 200;
 
     // データがない場合は空のチャートを表示
     if (!chartData || !chartData.labels || chartData.labels.length === 0) {
       const emptyData = {
         labels: ["データなし"],
-        datasets: [{
-          data: [0],
-          color: (opacity = 1) => theme.colors.chart.primary,
-          strokeWidth: 2,
-        }],
+        datasets: [
+          {
+            data: [0],
+            color: (opacity = 1) => theme.colors.chart.primary,
+            strokeWidth: 2,
+          },
+        ],
       };
 
       if (chartType === "line") {
@@ -132,6 +136,14 @@ export const ChartSection: React.FC<ChartSectionProps> = ({
           withHorizontalLabels={true}
           withDots={true}
           withShadow={false}
+          formatXLabel={(value) => {
+            // 数字のみを抽出して月を追加
+            const match = value.match(/(\d+)/);
+            if (match) {
+              return `${match[1]}月`;
+            }
+            return value;
+          }}
         />
       );
     } else {
@@ -153,7 +165,9 @@ export const ChartSection: React.FC<ChartSectionProps> = ({
 
   return (
     <View style={isModal ? styles.modalSection : commonStyles.section}>
-      <View style={isModal ? styles.modalSectionHeader : commonStyles.sectionHeader}>
+      <View
+        style={isModal ? styles.modalSectionHeader : commonStyles.sectionHeader}
+      >
         {!isModal && (
           <View style={styles.titleContainer}>
             {icon && (
@@ -214,16 +228,14 @@ export const ChartSection: React.FC<ChartSectionProps> = ({
 
 const styles = StyleSheet.create({
   chartContainer: {
-    backgroundColor: theme.colors.background.card,
-    borderRadius: theme.borderRadius.xl,
     padding: theme.spacing.md,
-    marginHorizontal: theme.spacing.lg,
-    ...theme.shadows.md,
+    paddingLeft: 0,
+    marginHorizontal: 0,
     position: "relative",
   },
   chartUnitWrapper: {
     position: "absolute",
-    top: theme.spacing.lg,
+    top: 0,
     right: theme.spacing.lg,
     zIndex: 1,
   },
@@ -233,7 +245,7 @@ const styles = StyleSheet.create({
     fontWeight: theme.fontWeight.medium,
   },
   chart: {
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: theme.borderRadius.sm,
   },
   tabContainer: {
     flexDirection: "row",

@@ -192,10 +192,10 @@ export default function MeasurementScreen() {
   // 体重グラフデータ
   const weightData = {
     "1month": {
-      labels: ["1月", "2月", "3月", "4月", "5月", "6月"],
+      labels: ["1", "2", "3", "4", "5"],
       datasets: [
         {
-          data: [72, 71.5, 71, 70.8, 70.5, 70.2],
+          data: [72, 71.5, 71, 70.8, 70.5],
           color: (opacity = 1) => colors.primary,
           strokeWidth: 2,
         },
@@ -257,15 +257,15 @@ export default function MeasurementScreen() {
   // 血圧グラフデータ
   const bpData = {
     "1month": {
-      labels: ["1月", "2月", "3月", "4月", "5月", "6月"],
+      labels: ["1", "2", "3", "4", "5"],
       datasets: [
         {
-          data: [125, 122, 120, 118, 120, 115],
+          data: [125, 122, 120, 118, 120],
           color: (opacity = 1) => colors.pink[500],
           strokeWidth: 2,
         },
         {
-          data: [82, 80, 78, 76, 80, 75],
+          data: [82, 80, 78, 76, 80],
           color: (opacity = 1) => colors.mint[500],
           strokeWidth: 2,
         },
@@ -366,10 +366,10 @@ export default function MeasurementScreen() {
   // 体脂肪率グラフデータ
   const bodyFatData = {
     "1month": {
-      labels: ["1月", "2月", "3月", "4月", "5月", "6月"],
+      labels: ["1", "2", "3", "4", "5"],
       datasets: [
         {
-          data: [23.5, 23.2, 22.8, 22.5, 22.3, 22.0],
+          data: [23.5, 23.2, 22.8, 22.5, 22.3],
           color: (opacity = 1) => colors.purple[500],
           strokeWidth: 2,
         },
@@ -431,10 +431,10 @@ export default function MeasurementScreen() {
   // 筋肉量グラフデータ
   const muscleData = {
     "1month": {
-      labels: ["1月", "2月", "3月", "4月", "5月", "6月"],
+      labels: ["1", "2", "3", "4", "5"],
       datasets: [
         {
-          data: [34.8, 35.0, 35.2, 35.4, 35.2, 35.6],
+          data: [34.8, 35.0, 35.2, 35.4, 35.2],
           color: (opacity = 1) => colors.mint[500],
           strokeWidth: 2,
         },
@@ -1006,12 +1006,7 @@ const styles = StyleSheet.create({
   },
   currentStats: {
     paddingHorizontal: layout.screenPadding,
-    backgroundColor: theme.colors.background.secondary,
-    marginHorizontal: layout.screenPadding,
-    borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.lg,
     marginBottom: theme.spacing.xl,
-    ...theme.shadows.md,
   },
   mainStatsRow: {
     flexDirection: "row",
@@ -1019,12 +1014,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   mainStat: {
-    ...commonStyles.card,
+    backgroundColor: theme.colors.background.card,
     borderRadius: borderRadius.xl,
     padding: spacing.xl,
     alignItems: "center",
     flex: 1,
-    ...shadows.md,
   },
   mainStatLabel: {
     fontSize: 14,
@@ -1056,7 +1050,6 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.xl,
     overflow: "hidden",
     marginBottom: 0,
-    ...theme.shadows.md,
   },
   subStatGradient: {
     padding: theme.spacing.lg,
@@ -1076,14 +1069,9 @@ const styles = StyleSheet.create({
     fontFamily: theme.fontFamily.bold,
   },
   historySection: {
-    ...commonStyles.listContainer,
-    ...commonStyles.section,
     marginTop: spacing.xl,
-    backgroundColor: theme.colors.background.secondary,
     marginHorizontal: layout.screenPadding,
-    borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.lg,
-    ...theme.shadows.sm,
+    marginBottom: 100,
   },
   historySectionHeader: {
     flexDirection: "row",
@@ -1099,11 +1087,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   historyItem: {
-    ...commonStyles.listItem,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.lg,
+    marginBottom: theme.spacing.sm,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: spacing.xl,
+    padding: spacing.lg,
   },
   historyContent: {
     flex: 1,

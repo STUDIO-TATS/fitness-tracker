@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { TouchableOpacity } from "react-native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useNavigationState } from "@react-navigation/native";
 import TabNavigator from "./TabNavigator";
 import CalendarScreen from "../screens/CalendarScreen";
 import QRScannerScreen from "../screens/QRScannerScreen";
@@ -57,30 +57,7 @@ export default function DrawerNavigator() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name={icons.navigation.homeOutline} size={size} color={color} />
           ),
-          headerTitle: t("navigation.home"),
-          headerLeft: () => (
-            <TouchableOpacity
-              onPress={() => drawerNav.openDrawer()}
-              style={{
-                marginLeft: 16,
-                padding: 8,
-              }}
-            >
-              <Ionicons
-                name="menu"
-                size={24}
-                color={theme.colors.text.inverse}
-              />
-            </TouchableOpacity>
-          ),
-          headerRight: () => (
-            <NotificationBadge
-              onPress={() => {
-                // 直接RootNavigatorにナビゲート
-                navigation.navigate('Notifications');
-              }}
-            />
-          ),
+          headerShown: false, // TabNavigatorで個別にヘッダーを設定するため
         })}
       />
       <Drawer.Screen

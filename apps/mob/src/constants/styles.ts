@@ -5,9 +5,8 @@ import { theme } from "./theme";
 export const typography = {
   // Screen titles
   screenTitle: {
-    fontSize: 32,
+    fontSize: 18,
     fontWeight: "bold" as const,
-    lineHeight: 40,
     fontFamily: theme.fontFamily.bold,
   },
   // Section titles

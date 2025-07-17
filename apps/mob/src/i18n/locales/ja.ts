@@ -96,6 +96,7 @@ export default {
     exercises: 'エクササイズ',
     details: 'ワークアウト詳細',
     quickStats: 'クイック統計',
+    noWorkouts: 'ワークアウトがありません',
     activities: {
       running: 'ランニング',
       walking: 'ウォーキング',
@@ -119,6 +120,7 @@ export default {
     progress: '進捗率',
     achieved: '達成',
     remaining: '残り',
+    noGoals: '目標がありません',
   },
 
   // 測定

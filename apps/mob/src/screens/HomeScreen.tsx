@@ -62,6 +62,9 @@ export default function HomeScreen() {
     weekly: { labels: [], datasets: [] },
     monthly: { labels: [], datasets: [] },
   });
+  const [userProfile, setUserProfile] = useState<{
+    display_name?: string | null;
+  }>({});
 
   useEffect(() => {
     fetchDashboardData();
@@ -80,6 +83,7 @@ export default function HomeScreen() {
         workoutsResult,
         activitiesResult,
         measurementsResult,
+        profileResult,
       ] = await Promise.all([
         // Active goals count
         supabase
@@ -109,6 +113,13 @@ export default function HomeScreen() {
           .eq("user_id", session.user.id)
           .order("measurement_date", { ascending: true })
           .limit(90),
+
+        // User profile
+        supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("id", session.user.id)
+          .single(),
       ]);
 
       // Update stats
@@ -117,6 +128,11 @@ export default function HomeScreen() {
         monthlyWorkouts: workoutsResult.count || 0,
         todayActivities: activitiesResult.count || 0,
       });
+
+      // Update profile
+      if (profileResult.data) {
+        setUserProfile(profileResult.data);
+      }
 
       // Process weight data
       if (measurementsResult.data && measurementsResult.data.length > 0) {
@@ -334,10 +350,9 @@ export default function HomeScreen() {
       >
         <View style={commonStyles.screenHeader}>
           <Text style={styles.greeting}>
-            {t("home.welcome", { name: "" }).replace("さん", "！")}
-          </Text>
-          <Text style={styles.userName}>
-            {session?.user?.email || t("common.guest")}
+            {userProfile.display_name
+              ? t("home.welcome", { name: userProfile.display_name })
+              : t("home.welcome", { name: t("common.guest") })}
           </Text>
         </View>
 
@@ -406,7 +421,6 @@ export default function HomeScreen() {
           }
           icon="scale-outline"
         />
-
         <ChartSection
           title={
             progressPeriod === "weekly"

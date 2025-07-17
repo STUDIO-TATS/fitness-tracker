@@ -81,6 +81,7 @@ export default {
   // Workout
   workout: {
     title: 'Workout',
+    startWorkout: 'New Workout',
     selectActivity: 'Select Activity',
     duration: 'Duration',
     calories: 'Calories',
@@ -94,6 +95,8 @@ export default {
     moreExercises: 'More Exercises',
     exercises: 'Exercises',
     details: 'Workout Details',
+    quickStats: 'Quick Stats',
+    noWorkouts: 'No workouts yet',
     activities: {
       running: 'Running',
       walking: 'Walking',
@@ -117,6 +120,7 @@ export default {
     progress: 'Progress',
     achieved: 'Achieved',
     remaining: 'Remaining',
+    noGoals: 'No goals set',
   },
 
   // Measurement
